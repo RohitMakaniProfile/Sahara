@@ -1,1 +1,2 @@
-# sahara-backend
+# Sahara application backend
+
