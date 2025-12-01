@@ -1,13 +1,13 @@
-import type { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from 'express';
 
 type AsyncFunction<Req extends Request = Request> = (
     req: Req,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
 ) => Promise<void>;
 
 export function asyncHandler<Req extends Request = Request>(
-    execution: AsyncFunction<Req>
+    execution: AsyncFunction<Req>,
 ) {
     return (req: Request, res: Response, next: NextFunction) => {
         execution(req as Req, res, next).catch(next);

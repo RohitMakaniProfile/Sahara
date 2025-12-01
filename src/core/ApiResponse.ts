@@ -22,14 +22,15 @@ abstract class ApiResponse {
         protected statusCode: StatusCode,
         protected status: ResponseStatus,
         protected message: string,
-    ) { }
+    ) {}
 
     protected prepare<T extends ApiResponse>(
         res: Response,
         response: T,
         headers: { [key: string]: string },
     ): Response {
-        for (const [key, value] of Object.entries(headers)) res.append(key, value);
+        for (const [key, value] of Object.entries(headers))
+            res.append(key, value);
         return res.status(this.status).json(ApiResponse.sanitize(response));
     }
 
@@ -45,7 +46,8 @@ abstract class ApiResponse {
         Object.assign(clone, response);
         // @ts-expect-error: optional
         delete clone.status;
-        for (const i in clone) if (typeof clone[i] === 'undefined') delete clone[i];
+        for (const i in clone)
+            if (typeof clone[i] === 'undefined') delete clone[i];
         return clone;
     }
 }
@@ -97,7 +99,10 @@ export class FailureMsgResponse extends ApiResponse {
 }
 
 export class SuccessResponse<T> extends ApiResponse {
-    constructor(message: string, private data: T) {
+    constructor(
+        message: string,
+        private data: T,
+    ) {
         super(StatusCode.SUCCESS, ResponseStatus.SUCCESS, message);
     }
 

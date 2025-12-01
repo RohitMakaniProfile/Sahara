@@ -5,7 +5,7 @@ import { originUrl } from './config.js';
 import router from './routes/index.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { NotFoundError } from './core/ApiError.js';
-import helmet from "helmet";
+import helmet from 'helmet';
 
 process.on('uncaughtException', (e) => {
     logger.error(e);

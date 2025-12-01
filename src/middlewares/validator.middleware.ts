@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 import type { ZodSchema } from 'zod';
 
-import { BadRequestError } from "./../core/ApiError.js";
+import { BadRequestError } from './../core/ApiError.js';
 import { isProduction } from '../config.js';
 import { ValidationSource } from './../helpers/validator.js';
 
@@ -123,7 +123,7 @@ type ZodSafeError = {
     code: string;
     message: string;
     expected: string[];
-    received?: string;  // Add this line
+    received?: string; // Add this line
 };
 
 export const validator = (
@@ -136,13 +136,14 @@ export const validator = (
         if (!result.success) {
             const errors: ZodSafeError[] = JSON.parse(String(result.error));
             const validationErrors: ValidationErrorDetail[] = errors.map(
-                (err) => ({  // Can now use err directly without inline type
+                (err) => ({
+                    // Can now use err directly without inline type
                     field: formatFieldName(err.path),
                     message: getReadableErrorMessage(
                         err.code,
                         err.path,
                         err.message,
-                        err.received,  // Now properly typed
+                        err.received, // Now properly typed
                         err.expected,
                     ),
                     ...(!isProduction && {
