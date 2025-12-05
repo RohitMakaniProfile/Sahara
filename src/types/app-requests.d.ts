@@ -1,14 +1,14 @@
-import { Request } from 'express';
+import 'express';
 
-// 8 hajar me rust me kaam nhi karunga
+declare global {
+  namespace Express {
+    interface UserPayload {
+      parentId: number;
+      email?: string;
+    }
 
-declare interface ProtectedRequest extends Request {
-    user: User;
-    accessToken: string;
-    // keystore: Keystore;
-}
-
-declare interface Tokens {
-    accessToken: string;
-    refreshToken: string;
+    interface Request {
+      user?: UserPayload;
+    }
+  }
 }
