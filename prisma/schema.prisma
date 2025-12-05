@@ -3,13 +3,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"   // or sqlite if needed
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-
-//      ENUMS
-
+// ENUMS
 enum SupportedLanguage {
   ENGLISH
   HINDI
@@ -55,62 +53,56 @@ enum ParentChildRelations {
   OTHERS
 }
 
-
-//      PARENT TABLE
-
+// PARENT
 model Parent {
   id                           Int                     @id @default(autoincrement())
-  name                         String?
-  phone_number                 String?                 @map("phone_number")
+  name                         String
+  phoneNumber                  String                 @map("phone_number") @unique
   email                        String                  @unique
-  preferred_language           SupportedLanguage?      @default(ENGLISH)
-  location                     String?
-  known_autism_history         String?
-  preferred_communication_style CommunicationStyle?    @default(SIMPLE)
+  preferredLanguage            SupportedLanguage?      @default(ENGLISH)
+  location                     String
+  knownAutismHistory           String?
+  preferredCommunicationStyle  CommunicationStyle?     @default(SIMPLE)
 
   hashedPassword               String
   emailVerified                Boolean                 @default(false)
 
-  created_at                   DateTime                @default(now())
-  updated_at                   DateTime                @updatedAt
+  createdAt                    DateTime                @default(now())
+  updatedAt                    DateTime                @updatedAt
 
-  // relations
+  @@index([email])
   children                     Child[]
   refreshTokens                RefreshToken[]
 }
 
-
- //     CHILD TABLE
-
+// CHILD
 model Child {
   id                   Int                     @id @default(autoincrement())
-  name                 String?
-  dob                  DateTime?
-  gender               Gender?
-  known_diagnosis      DiagnosisTypes?
-  diagnosis_stage      DiagnosisStages?
-  developmental_stage  ChildDevelopmentStages?
-  dominant_hand        String?
+  name                 String
+  dob                  DateTime
+  gender               Gender
+  knownDiagnosis       DiagnosisTypes?
+  diagnosisStage       DiagnosisStages?
+  developmentalStage   ChildDevelopmentStages?
+  dominantHand         String?
 
-  parent_id            Int
-  relation_with_parent ParentChildRelations?
-  needs_vector         Float[]
+  parentId             Int
+  relationWithParent   ParentChildRelations?
 
-  created_at           DateTime  @default(now())
-  updated_at           DateTime  @updatedAt
+  needsVector          Float[] @default([])
 
-  parent               Parent    @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  parent               Parent    @relation(fields: [parentId], references: [id], onDelete: Cascade)
 }
 
-
-//    REFRESH TOKEN TABLE
-
-
+// REFRESH TOKEN
 model RefreshToken {
   id          Int       @id @default(autoincrement())
   tokenHash   String
-  parent_id   Int
-  parent      Parent    @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parentId    Int       @map("parent_id")
+  parent      Parent    @relation(fields: [parentId], references: [id], onDelete: Cascade)
 
   ip          String?
   userAgent   String?
@@ -118,5 +110,6 @@ model RefreshToken {
   createdAt   DateTime  @default(now())
   expiresAt   DateTime
 
-  @@index([parent_id])
+  @@index([parentId])
+  @@index([expiresAt])
 }

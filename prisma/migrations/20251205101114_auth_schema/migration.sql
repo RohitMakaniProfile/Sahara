@@ -22,17 +22,17 @@ CREATE TYPE "ParentChildRelations" AS ENUM ('MOTHER', 'FATHER', 'CARETAKER', 'BR
 -- CreateTable
 CREATE TABLE "Parent" (
     "id" SERIAL NOT NULL,
-    "name" TEXT,
-    "phone_number" TEXT,
+    "name" TEXT NOT NULL,
+    "phone_number" TEXT NOT NULL,
     "email" TEXT NOT NULL,
-    "preferred_language" "SupportedLanguage" DEFAULT 'ENGLISH',
-    "location" TEXT,
-    "known_autism_history" TEXT,
-    "preferred_communication_style" "CommunicationStyle" DEFAULT 'SIMPLE',
+    "preferredLanguage" "SupportedLanguage" DEFAULT 'ENGLISH',
+    "location" TEXT NOT NULL,
+    "knownAutismHistory" TEXT,
+    "preferredCommunicationStyle" "CommunicationStyle" DEFAULT 'SIMPLE',
     "hashedPassword" TEXT NOT NULL,
     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Parent_pkey" PRIMARY KEY ("id")
 );
@@ -40,18 +40,18 @@ CREATE TABLE "Parent" (
 -- CreateTable
 CREATE TABLE "Child" (
     "id" SERIAL NOT NULL,
-    "name" TEXT,
-    "dob" TIMESTAMP(3),
-    "gender" "Gender",
-    "known_diagnosis" "DiagnosisTypes",
-    "diagnosis_stage" "DiagnosisStages",
-    "developmental_stage" "ChildDevelopmentStages",
-    "dominant_hand" TEXT,
-    "parent_id" INTEGER NOT NULL,
-    "relation_with_parent" "ParentChildRelations",
-    "needs_vector" DOUBLE PRECISION[],
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "name" TEXT NOT NULL,
+    "dob" TIMESTAMP(3) NOT NULL,
+    "gender" "Gender" NOT NULL,
+    "knownDiagnosis" "DiagnosisTypes",
+    "diagnosisStage" "DiagnosisStages",
+    "developmentalStage" "ChildDevelopmentStages",
+    "dominantHand" TEXT,
+    "parentId" INTEGER NOT NULL,
+    "relationWithParent" "ParentChildRelations",
+    "needsVector" DOUBLE PRECISION[] DEFAULT ARRAY[]::DOUBLE PRECISION[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Child_pkey" PRIMARY KEY ("id")
 );
@@ -70,13 +70,22 @@ CREATE TABLE "RefreshToken" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Parent_phone_number_key" ON "Parent"("phone_number");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Parent_email_key" ON "Parent"("email");
+
+-- CreateIndex
+CREATE INDEX "Parent_email_idx" ON "Parent"("email");
 
 -- CreateIndex
 CREATE INDEX "RefreshToken_parent_id_idx" ON "RefreshToken"("parent_id");
 
+-- CreateIndex
+CREATE INDEX "RefreshToken_expiresAt_idx" ON "RefreshToken"("expiresAt");
+
 -- AddForeignKey
-ALTER TABLE "Child" ADD CONSTRAINT "Child_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "Parent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Child" ADD CONSTRAINT "Child_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "Parent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "Parent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
