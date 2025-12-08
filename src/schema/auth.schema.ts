@@ -40,5 +40,5 @@ const ChildRegister = z.object({
 export default {
     ParentRegister,
     ChildRegister,
-    ParentLogin
+    ParentLogin,
 };
