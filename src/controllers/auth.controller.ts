@@ -18,7 +18,7 @@ import { refreshTokenTtlMs } from '../config.js';
 import type { ProtectedRequest } from '../types/app-requests.js';
 import { configCookies } from '../helpers/cookie-options.js';
 
-export const register = asyncHandler(async (req: Request, res: Response) => {
+const register = asyncHandler(async (req: Request, res: Response) => {
     const { email, password, name, phoneNumber, location } = req.body;
 
     const existing = await parentRepository.findByEmail(email);
@@ -51,7 +51,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     }).send(res);
 });
 
-export const login = asyncHandler(async (req: Request, res: Response) => {
+const login = asyncHandler(async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     const parent = await parentRepository.findByEmail(email);
@@ -80,7 +80,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     }).send(res);
 });
 
-export const refresh = asyncHandler(async (req: Request, res: Response) => {
+const refresh = asyncHandler(async (req: Request, res: Response) => {
     const tokenFromCookie = req.cookies.refreshToken;
     if (!tokenFromCookie) throw new BadRequestError('No refresh token');
 
@@ -124,7 +124,7 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
     new SuccessResponse('Refreshed', { accessToken: newAccess }).send(res);
 });
 
-export const logout = asyncHandler(async (req: Request, res: Response) => {
+const logout = asyncHandler(async (req: Request, res: Response) => {
     const tokenFromCookie = req.cookies.refreshToken;
     if (!tokenFromCookie) {
         new SuccessResponse('Already logged out', {}).send(res);
@@ -157,7 +157,7 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
     new SuccessResponse('Logged out', {}).send(res);
 });
 
-export const childRegister = asyncHandler<ProtectedRequest>(
+const childRegister = asyncHandler<ProtectedRequest>(
     async (req: ProtectedRequest, res: Response) => {
         const parentId = req.user?.parentId;
         // console.log("parentid-->",parentId);
@@ -183,3 +183,12 @@ export const childRegister = asyncHandler<ProtectedRequest>(
         }).send(res);
     },
 );
+
+
+export default {
+    register, 
+    login,
+    refresh,
+    childRegister, 
+    logout
+};

@@ -2,7 +2,7 @@ import z from 'zod';
 
 const ParentRegister = z.object({
     name: z.string().min(1, 'Name is required'),
-    email: z.string().email('Email must be a valid email address'),
+    email: z.email('Email must be a valid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters long'),
     phoneNumber: z
         .string()
@@ -10,8 +10,7 @@ const ParentRegister = z.object({
     location: z.string().optional(),
 });
 
-const dobSchema = z;
-z.preprocess(
+const dobSchema = z.preprocess(
     (value) => {
         if (typeof value === 'string') {
             const d = new Date(value);
@@ -23,6 +22,8 @@ z.preprocess(
         message: 'Date of birth must be in the past',
     }),
 );
+
+const ParentLogin = ParentRegister.pick({ email: true, password: true });
 
 const ChildRegister = z.object({
     name: z.string().min(1, 'Name is required'),
@@ -39,4 +40,5 @@ const ChildRegister = z.object({
 export default {
     ParentRegister,
     ChildRegister,
+    ParentLogin
 };
