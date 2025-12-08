@@ -1,10 +1,10 @@
 import bcrypt from 'bcrypt';
 
 export class PasswordUtils {
-    private static readonly SALT_ROUNDS = 12;
+    private static readonly saltRounds = 12;
 
     static async hash(password: string): Promise<string> {
-        return bcrypt.hash(password, this.SALT_ROUNDS);
+        return bcrypt.hash(password, this.saltRounds);
     }
 
     static async compare(

@@ -1,26 +1,28 @@
-// middlewares/auth.middleware.ts
-import type { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../core/token.js';
 import { BadRequestError } from '../core/ApiError.js';
+import type { ProtectedRequest } from '../types/app-requests.js';
+import { asyncHandler } from '../core/asyncHandler.js';
 
-export const protect = (req: Request, _res: Response, next: NextFunction) => {
-  const header = req.headers.authorization;
+export const protect = asyncHandler<ProtectedRequest>(
+    async (req, _res, next) => {
+        const header = req.headers.authorization;
 
-  if (!header || !header.startsWith('Bearer ')) {
-    throw new BadRequestError('Authorization required');
-  }
+        if (!header || !header.startsWith('Bearer ')) {
+            throw new BadRequestError('Authorization required');
+        }
 
-  const token = header.split(' ')[1];
-  const payload = verifyAccessToken(token as string);
+        const token = header.split(' ')[1];
+        const payload = verifyAccessToken(token as string);
 
-  if (!payload) {
-    throw new BadRequestError('Invalid or expired access token');
-  }
+        if (!payload) {
+            throw new BadRequestError('Invalid or expired access token');
+        }
 
-  // Attach typed user payload to req.user (globally defined)
-  req.user = {
-    parentId: payload.parentId,
-  };
+        // Attach typed user payload to req.user (globally defined)
+        req.user = {
+            parentId: payload.parentId,
+        };
 
-  next();
-};
+        next();
+    },
+);

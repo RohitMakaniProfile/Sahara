@@ -1,14 +1,10 @@
-import 'express';
+import { Request } from 'express';
 
-declare global {
-  namespace Express {
-    interface UserPayload {
-      parentId: number;
-      email?: string;
-    }
-
-    interface Request {
-      user?: UserPayload;
-    }
-  }
+interface User {
+    parentId: number;
 }
+declare interface ProtectedRequest extends Request {
+    user: User;
+}
+
+export { ProtectedRequest, User };
