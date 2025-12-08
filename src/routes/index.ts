@@ -1,12 +1,10 @@
-import { Router } from 'express';
-import { SuccessMsgResponse } from '../core/ApiResponse.js';
+import express from 'express';
+import authRouter from './auth.routes.js';
+import childRouter from './child.routes.js';
 
-const router = Router();
+const router = express.Router();
 
-router.get('/health', (_req, res) => {
-    new SuccessMsgResponse(
-        'Sahara Backend application is healthy and running.',
-    ).send(res);
-});
+router.use('/api/auth', authRouter);
+router.use('/api/child', childRouter);
 
 export default router;

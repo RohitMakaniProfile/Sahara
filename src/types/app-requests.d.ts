@@ -1,14 +1,10 @@
 import { Request } from 'express';
 
-// 8 hajar me rust me kaam nhi karunga
-
+interface User {
+    parentId: number;
+}
 declare interface ProtectedRequest extends Request {
     user: User;
-    accessToken: string;
-    // keystore: Keystore;
 }
 
-declare interface Tokens {
-    accessToken: string;
-    refreshToken: string;
-}
+export { ProtectedRequest, User };

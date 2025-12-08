@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,7 +7,109 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Parent {
-  id Int @id @default(autoincrement())
+// ENUMS
+enum SupportedLanguage {
+  ENGLISH
+  HINDI
+}
 
+enum CommunicationStyle {
+  SIMPLE
+  DETAILED
+  VISUAL_FIRST
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum DiagnosisTypes {
+  AUTISM
+  ADHD
+  SPEECH_DELAY
+  NOT_DIAGNOSED
+}
+
+enum DiagnosisStages {
+  SUSPECTED
+  CONFIRMED
+  RECENTLY_DIAGNOSED
+}
+
+enum ChildDevelopmentStages {
+  TODDLER
+  EARLY_CHILDHOOD
+  SCHOOL_AGE
+}
+
+enum ParentChildRelations {
+  MOTHER
+  FATHER
+  CARETAKER
+  BROTHER
+  SISTER
+  OTHERS
+}
+
+// PARENT
+model Parent {
+  id                           Int                     @id @default(autoincrement())
+  name                         String
+  phoneNumber                  String                 @map("phone_number") @unique
+  email                        String                  @unique
+  preferredLanguage            SupportedLanguage?      @default(ENGLISH)
+  location                     String
+  knownAutismHistory           String?
+  preferredCommunicationStyle  CommunicationStyle?     @default(SIMPLE)
+
+  hashedPassword               String
+  emailVerified                Boolean                 @default(false)
+
+  createdAt                    DateTime                @default(now())
+  updatedAt                    DateTime                @updatedAt
+
+  @@index([email])
+  children                     Child[]
+  refreshTokens                RefreshToken[]
+}
+
+// CHILD
+model Child {
+  id                   Int                     @id @default(autoincrement())
+  name                 String
+  dob                  DateTime
+  gender               Gender
+  knownDiagnosis       DiagnosisTypes?
+  diagnosisStage       DiagnosisStages?
+  developmentalStage   ChildDevelopmentStages?
+  dominantHand         String?
+
+  parentId             Int
+  relationWithParent   ParentChildRelations?
+
+  needsVector          Float[] @default([])
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  parent               Parent    @relation(fields: [parentId], references: [id], onDelete: Cascade)
+}
+
+// REFRESH TOKEN
+model RefreshToken {
+  id          Int       @id @default(autoincrement())
+  tokenHash   String
+  parentId    Int       @map("parent_id")
+  parent      Parent    @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  ip          String?
+  userAgent   String?
+
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+
+  @@index([parentId])
+  @@index([expiresAt])
 }
