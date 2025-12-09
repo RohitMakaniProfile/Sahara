@@ -89,7 +89,7 @@ const login = asyncHandler(async (req: Request, res: Response) => {
         accessToken,
         // Refresh token information for mobile
         refreshToken,
-        refreshTokenExpiresAt: expiresAt
+        refreshTokenExpiresAt: expiresAt,
     }).send(res);
 });
 

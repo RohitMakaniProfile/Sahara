@@ -27,9 +27,7 @@ const verifyAccessToken = (token: string): AccessTokenPayload | null => {
     }
 };
 
-const verifyRefreshToken = (
-    token: string,
-): RefreshTokenPayload | null => {
+const verifyRefreshToken = (token: string): RefreshTokenPayload | null => {
     try {
         return jwt.verify(token, refreshSecret!) as RefreshTokenPayload;
     } catch {
@@ -41,5 +39,5 @@ export default {
     generateAccessToken,
     generateRefreshToken,
     verifyAccessToken,
-    verifyRefreshToken
-}
+    verifyRefreshToken,
+};
