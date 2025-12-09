@@ -1,6 +1,6 @@
 import { refreshTokenTtlMs } from '../../config.js';
 import { PasswordUtils } from '../../core/password.js';
-import { generateRefreshToken } from '../../core/token.js';
+import jwtUtil from '../../core/token.js';
 import { prisma } from '../prisma.js';
 import type { Parent, Prisma } from '@prisma/client';
 
@@ -25,7 +25,7 @@ const createWithToken = async (
             data,
         });
 
-        const refreshTokenPlain = generateRefreshToken(parent.id);
+        const refreshTokenPlain = jwtUtil.generateRefreshToken(parent.id);
         const hashedRefresh = await PasswordUtils.hash(refreshTokenPlain);
 
         const expiresAt = new Date(Date.now() + refreshTokenTtlMs);

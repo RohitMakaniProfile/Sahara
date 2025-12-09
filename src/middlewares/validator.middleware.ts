@@ -128,7 +128,7 @@ type ZodSafeError = {
 
 export const validator = (
     schema: ZodSchema,
-    source: ValidationSource,
+    source: ValidationSource = ValidationSource.BODY,
 ): RequestHandler => {
     return (req, _res, next): void => {
         const result = schema.safeParse(req[source]);

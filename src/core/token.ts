@@ -11,15 +11,15 @@ export interface RefreshTokenPayload {
     exp: number;
 }
 
-export const generateAccessToken = (parentId: number) => {
+const generateAccessToken = (parentId: number) => {
     return jwt.sign({ parentId }, jwtSecret!, { expiresIn: '15m' });
 };
 
-export const generateRefreshToken = (parentId: number) => {
+const generateRefreshToken = (parentId: number) => {
     return jwt.sign({ parentId }, refreshSecret!, { expiresIn: '7d' });
 };
 
-export const verifyAccessToken = (token: string): AccessTokenPayload | null => {
+const verifyAccessToken = (token: string): AccessTokenPayload | null => {
     try {
         return jwt.verify(token, jwtSecret!) as AccessTokenPayload;
     } catch {
@@ -27,12 +27,17 @@ export const verifyAccessToken = (token: string): AccessTokenPayload | null => {
     }
 };
 
-export const verifyRefreshToken = (
-    token: string,
-): RefreshTokenPayload | null => {
+const verifyRefreshToken = (token: string): RefreshTokenPayload | null => {
     try {
         return jwt.verify(token, refreshSecret!) as RefreshTokenPayload;
     } catch {
         return null;
     }
+};
+
+export default {
+    generateAccessToken,
+    generateRefreshToken,
+    verifyAccessToken,
+    verifyRefreshToken,
 };

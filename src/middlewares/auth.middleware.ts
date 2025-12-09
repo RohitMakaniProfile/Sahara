@@ -1,4 +1,4 @@
-import { verifyAccessToken } from '../core/token.js';
+import jwtUtil from '../core/token.js';
 import { BadRequestError } from '../core/ApiError.js';
 import type { ProtectedRequest } from '../types/app-requests.js';
 import { asyncHandler } from '../core/asyncHandler.js';
@@ -12,7 +12,7 @@ export const protect = asyncHandler<ProtectedRequest>(
         }
 
         const token = header.split(' ')[1];
-        const payload = verifyAccessToken(token as string);
+        const payload = jwtUtil.verifyAccessToken(token as string);
 
         if (!payload) {
             throw new BadRequestError('Invalid or expired access token');

@@ -3,22 +3,23 @@ import { asyncHandler } from '../core/asyncHandler.js';
 import parentRepository from '../db/repository/parent.repository.js';
 import refreshRepository from '../db/repository/refreshToken.repository.js';
 import { PasswordUtils } from '../core/password.js';
-import {
-    generateAccessToken,
-    generateRefreshToken,
-    verifyRefreshToken,
-} from '../core/token.js';
+import jwtUtil from '../core/token.js';
 import { prisma } from '../db/prisma.js';
 import { BadRequestError } from '../core/ApiError.js';
-import { SuccessResponse } from '../core/ApiResponse.js';
+import { SuccessMsgResponse, SuccessResponse } from '../core/ApiResponse.js';
 import type { RefreshToken } from '@prisma/client';
-
 import { sendRefreshCookie } from '../services/auth.services.js';
 import { refreshTokenTtlMs } from '../config.js';
 import type { ProtectedRequest } from '../types/app-requests.js';
 import { configCookies } from '../helpers/cookie-options.js';
 
-export const register = asyncHandler(async (req: Request, res: Response) => {
+// TODO: Add some headers to detect the device of the client request(Web/Mobile)
+
+/**
+ * Request handler to register the parent.
+ * @author Hemant Sharma
+ */
+const register = asyncHandler(async (req: Request, res: Response) => {
     const { email, password, name, phoneNumber, location } = req.body;
 
     const existing = await parentRepository.findByEmail(email);
@@ -34,13 +35,14 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
         location,
     });
 
+    // It stores the token in the cookie - For web(future)
     sendRefreshCookie(
         res,
         parentWithToken.refreshTokenPlain,
         parentWithToken.expiresAt,
     );
 
-    const accessToken = generateAccessToken(parentWithToken.parent.id);
+    const accessToken = jwtUtil.generateAccessToken(parentWithToken.parent.id);
 
     new SuccessResponse('Registered', {
         parent: {
@@ -48,10 +50,18 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
             email: parentWithToken.parent.email,
         },
         accessToken,
+        // also include refresh token for mobile
+        refreshToken: parentWithToken.refreshTokenPlain,
+        refreshTokenExpiresAt: parentWithToken.expiresAt,
     }).send(res);
 });
 
-export const login = asyncHandler(async (req: Request, res: Response) => {
+/**
+ * Request handler to login the already registered parent.
+ * Issues Access and Refresh Token
+ * @author Hemant Sharma
+ */
+const login = asyncHandler(async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     const parent = await parentRepository.findByEmail(email);
@@ -60,8 +70,8 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     const valid = await PasswordUtils.compare(password, parent.hashedPassword);
     if (!valid) throw new BadRequestError('Invalid credentials');
 
-    const accessToken = generateAccessToken(parent.id);
-    const refreshToken = generateRefreshToken(parent.id);
+    const accessToken = jwtUtil.generateAccessToken(parent.id);
+    const refreshToken = jwtUtil.generateRefreshToken(parent.id);
 
     const hashedRefresh = await PasswordUtils.hash(refreshToken);
     const expiresAt = new Date(Date.now() + refreshTokenTtlMs);
@@ -77,14 +87,26 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     new SuccessResponse('Logged in', {
         parent: { id: parent.id, email: parent.email },
         accessToken,
+        // Refresh token information for mobile
+        refreshToken,
+        refreshTokenExpiresAt: expiresAt,
     }).send(res);
 });
 
-export const refresh = asyncHandler(async (req: Request, res: Response) => {
+/**
+ * Reissues the token to keep the session continue.
+ * @author Hemant Sharma
+ */
+const refresh = asyncHandler(async (req: Request, res: Response) => {
+    // For Web
     const tokenFromCookie = req.cookies.refreshToken;
-    if (!tokenFromCookie) throw new BadRequestError('No refresh token');
+    // For Mobile devices
+    const tokenFromBody = req.body.refreshToken;
 
-    const payload = verifyRefreshToken(tokenFromCookie);
+    const refreshToken = tokenFromBody || tokenFromCookie;
+    if (!refreshToken) throw new BadRequestError('No refresh token');
+
+    const payload = jwtUtil.verifyRefreshToken(refreshToken);
     if (!payload) throw new BadRequestError('Invalid refresh token');
 
     const savedTokens = await refreshRepository.findManyByParent(
@@ -93,7 +115,7 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
 
     let match: RefreshToken | null = null;
     for (const t of savedTokens) {
-        const ok = await PasswordUtils.compare(tokenFromCookie, t.tokenHash);
+        const ok = await PasswordUtils.compare(refreshToken, t.tokenHash);
         if (ok) {
             match = t;
             break;
@@ -106,11 +128,10 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
             'Token reuse detected — logged out everywhere.',
         );
     }
-    console.log('match refresh token we detect', match);
 
     // rotation
-    const newAccess = generateAccessToken(payload.parentId);
-    const newRefresh = generateRefreshToken(payload.parentId);
+    const newAccess = jwtUtil.generateAccessToken(payload.parentId);
+    const newRefresh = jwtUtil.generateRefreshToken(payload.parentId);
     const hashedNewRefresh = await PasswordUtils.hash(newRefresh);
     const expiresAt = new Date(Date.now() + refreshTokenTtlMs);
 
@@ -121,20 +142,32 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
     });
 
     sendRefreshCookie(res, newRefresh, expiresAt);
-    new SuccessResponse('Refreshed', { accessToken: newAccess }).send(res);
+    new SuccessResponse('Refreshed', {
+        accessToken: newAccess,
+        // Send refresh token also for mobile devices
+        refreshToken: newRefresh,
+        refreshTokenExpiresAt: expiresAt,
+    }).send(res);
 });
 
-export const logout = asyncHandler(async (req: Request, res: Response) => {
+/**
+ * @author Hemant Sharma
+ */
+const logout = asyncHandler(async (req: Request, res: Response) => {
     const tokenFromCookie = req.cookies.refreshToken;
-    if (!tokenFromCookie) {
+    const tokenFromBody = req.body.refreshToken;
+    const refreshToken = tokenFromBody || tokenFromCookie;
+    if (!refreshToken) {
         new SuccessResponse('Already logged out', {}).send(res);
         return;
     }
 
-    const payload = verifyRefreshToken(tokenFromCookie);
+    const payload = jwtUtil.verifyRefreshToken(refreshToken);
     if (!payload) {
-        res.clearCookie('refreshToken', { ...configCookies });
-        new SuccessResponse('Logged out', {}).send(res);
+        if (tokenFromCookie) {
+            res.clearCookie('refreshToken', { ...configCookies });
+        }
+        new SuccessMsgResponse('Logged out').send(res);
         return;
     }
 
@@ -142,6 +175,7 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
     const savedTokens = await refreshRepository.findManyByParent(
         payload.parentId,
     );
+
     for (const t of savedTokens) {
         const ok = await PasswordUtils.compare(tokenFromCookie, t.tokenHash);
         if (ok) {
@@ -150,17 +184,18 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
         }
     }
 
-    res.clearCookie('refreshToken', {
-        ...configCookies,
-    });
+    if (tokenFromCookie) {
+        res.clearCookie('refreshToken', {
+            ...configCookies,
+        });
+    }
 
-    new SuccessResponse('Logged out', {}).send(res);
+    new SuccessMsgResponse('Logged out').send(res);
 });
 
-export const childRegister = asyncHandler<ProtectedRequest>(
+const childRegister = asyncHandler<ProtectedRequest>(
     async (req: ProtectedRequest, res: Response) => {
         const parentId = req.user?.parentId;
-        // console.log("parentid-->",parentId);
 
         const { name, dob, gender, relationWithParent } = req.body;
 
@@ -183,3 +218,11 @@ export const childRegister = asyncHandler<ProtectedRequest>(
         }).send(res);
     },
 );
+
+export default {
+    register,
+    login,
+    refresh,
+    childRegister,
+    logout,
+};
