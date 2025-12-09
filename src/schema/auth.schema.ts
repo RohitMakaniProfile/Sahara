@@ -7,7 +7,7 @@ const ParentRegister = z.object({
     phoneNumber: z
         .string()
         .min(10, 'Phone number must be at least 10 digits long'),
-    location: z.string().optional(),
+    location: z.string(),
 });
 
 const dobSchema = z.preprocess(

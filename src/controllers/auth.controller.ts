@@ -87,6 +87,9 @@ const login = asyncHandler(async (req: Request, res: Response) => {
     new SuccessResponse('Logged in', {
         parent: { id: parent.id, email: parent.email },
         accessToken,
+        // Refresh token information for mobile
+        refreshToken,
+        refreshTokenExpiresAt: expiresAt
     }).send(res);
 });
 
@@ -112,7 +115,7 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
 
     let match: RefreshToken | null = null;
     for (const t of savedTokens) {
-        const ok = await PasswordUtils.compare(tokenFromCookie, t.tokenHash);
+        const ok = await PasswordUtils.compare(refreshToken, t.tokenHash);
         if (ok) {
             match = t;
             break;
@@ -187,7 +190,7 @@ const logout = asyncHandler(async (req: Request, res: Response) => {
         });
     }
 
-    new SuccessResponse('Logged out', {}).send(res);
+    new SuccessMsgResponse('Logged out').send(res);
 });
 
 const childRegister = asyncHandler<ProtectedRequest>(
