@@ -113,3 +113,22 @@ model RefreshToken {
   @@index([parentId])
   @@index([expiresAt])
 }
+
+model AutismCategory {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions AutismBehaviourQuestionnaire[]
+}
+model AutismBehaviourQuestionnaire {
+  id         Int      @id @default(autoincrement())
+  question   String
+  categoryId Int
+  category   AutismCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  weight     Int
+  order      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
