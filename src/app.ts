@@ -44,7 +44,7 @@ router.get('/health', (_req, res) => {
     ).send(res);
 });
 // Main routes
-app.use('/', router);
+app.use('/api', router);
 
 app.use((_req, _res, next) => next(new NotFoundError()));
 app.use(errorHandler);

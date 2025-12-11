@@ -5,9 +5,8 @@ import formRouter from './form.routes.js';
 
 const router = express.Router();
 
-router.use('/api/auth', authRouter);
-router.use('/api/child', childRouter);
-
-router.use('/api', formRouter);
+router.use('/auth', authRouter);
+router.use('/child', childRouter);
+router.use('/form', formRouter);
 
 export default router;
