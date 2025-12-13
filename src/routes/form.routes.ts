@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.use(protect);
 
-router.get('/', formController.getForm);
+router.get('/structure', formController.getForm);
+router.post('/submission', formController.formSubmissionData);
 
 export default router;

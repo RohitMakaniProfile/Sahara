@@ -73,6 +73,8 @@ model Parent {
   @@index([email])
   children                     Child[]
   refreshTokens                RefreshToken[]
+  autismBehaviourForms        AutismBehaviourForm[]
+  
 }
 
 // CHILD
@@ -95,6 +97,9 @@ model Child {
   updatedAt            DateTime  @updatedAt
 
   parent               Parent    @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@index([parentId])
+  autismBehaviourForms  AutismBehaviourForm[]
 }
 
 // REFRESH TOKEN
@@ -121,6 +126,7 @@ model AutismCategory {
   updatedAt DateTime @updatedAt
 
   questions AutismBehaviourQuestionnaire[]
+  categoryOutputs AutismCategoryOutput[]
 }
 model AutismBehaviourQuestionnaire {
   id         Int      @id @default(autoincrement())
@@ -131,4 +137,61 @@ model AutismBehaviourQuestionnaire {
   order      Int
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  questionResponses AutismBehaviourQuestionResponse[]
 }
+
+model AutismBehaviourForm {
+  id          Int      @id @default(autoincrement())
+  parentId    Int
+  childId     Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt       @map("updated_at")
+
+  parent      Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  questionResponses AutismBehaviourQuestionResponse[]
+  categoryOutputs   AutismCategoryOutput[]
+
+  @@index([parentId])
+  @@index([childId])
+}
+ 
+model AutismBehaviourQuestionResponse {
+  id             Int      @id @default(autoincrement())
+  questionId     Int      @map("question_id")
+  parentResponse Int      @map("parent_response")
+  formId         Int      @map("form_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt       @map("updated_at")
+
+  form      AutismBehaviourForm     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  question  AutismBehaviourQuestionnaire @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@index([questionId])
+  @@unique([formId, questionId]) 
+}
+
+model AutismCategoryOutput {
+  id               Int      @id @default(autoincrement())
+
+  formId           Int
+  categoryId       Int
+
+  totalScore       Int
+  maxPossibleScore Int
+  normalizedScore  Float
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  form             AutismBehaviourForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  category         AutismCategory      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([formId, categoryId])
+  @@index([categoryId])
+}
+
+

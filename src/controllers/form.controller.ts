@@ -3,6 +3,9 @@ import { asyncHandler } from '../core/asyncHandler.js';
 import { SuccessResponse } from '../core/ApiResponse.js';
 import type { QuestionnaireCategoryDTO } from '../types/form.js';
 import formRepository from '../db/repository/form.repository.js';
+import type { ProtectedRequest } from '../types/app-requests.js';
+import { BadRequestError } from '../core/ApiError.js';
+import formservices from '../services/form.services.js';
 
 const getForm = asyncHandler(async (_req: Request, res: Response) => {
     const form = await formRepository.getFormStructure();
@@ -19,4 +22,48 @@ const getForm = asyncHandler(async (_req: Request, res: Response) => {
     new SuccessResponse('Form fetched successfully', payload).send(res);
 });
 
-export default { getForm };
+const formSubmissionData = asyncHandler<ProtectedRequest>(
+    async (req: ProtectedRequest, res: Response) => {
+        const parentId = req.user?.parentId;
+        const { childId, answers } = req.body;
+        if (!Array.isArray(answers) || answers.length === 0) {
+            throw new BadRequestError('Answers are required');
+        }
+
+        const isChildIdValid = await formRepository.isChildBelongsToParent(
+            childId,
+            parentId,
+        );
+        if (!isChildIdValid) {
+            throw new BadRequestError('Child does not belong to the parent');
+        }
+        const allValidQuestionData =
+            await formRepository.AllValidQuestionsData(answers);
+        if (!allValidQuestionData) {
+            throw new BadRequestError('One or more questionIds are invalid');
+        }
+        const submissionData = await formRepository.createFormSubmission(
+            answers,
+            childId,
+            parentId,
+        );
+        const categoryOutputs =
+            formservices.categoryCalculation(submissionData);
+
+        const categoryOutputData = categoryOutputs.map((co) => ({
+            formId: submissionData.id,
+            categoryId: co.categoryId,
+            totalScore: co.totalScore,
+            maxPossibleScore: co.maxPossibleScore,
+            normalizedScore: co.normalizedScore,
+        }));
+
+        await formRepository.saveCategoryOutputs(categoryOutputData);
+
+        new SuccessResponse('Form submitted successfully', {
+            formID: submissionData.id,
+        }).send(res);
+    },
+);
+
+export default { getForm, formSubmissionData };
