@@ -3,6 +3,7 @@ import type {
     AllValidQuestionsDataDTO,
     CategoryOutputCreateListDTO,
 } from '../../types/form.js';
+import { InternalError } from '../../core/ApiError.js';
 
 const getFormStructure = async () => {
     const categories = await prisma.autismCategory.findMany({
@@ -97,7 +98,10 @@ const createFormSubmission = async (
                 },
             },
         });
-        return data!;
+        if (!data) {
+            throw new InternalError('Form submission failed');
+        }
+        return data;
     });
 };
 

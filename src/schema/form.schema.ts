@@ -7,7 +7,10 @@ const formSubmission = z.object({
         .array(
             z.object({
                 questionId: z.coerce.number('Question ID is required'),
-                answerValue: z.coerce.number('Answer value is required'),
+                response: z.coerce
+                    .number('Answer value is required')
+                    .min(0, 'Response must be >=0')
+                    .max(2, 'Response must be <=2'),
             }),
         )
         .nonempty('Answers are required'),

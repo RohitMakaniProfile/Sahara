@@ -1,3 +1,4 @@
+import { MAX_RESPONSE } from '../config.js';
 import type {
     CategoryAccumulator,
     CategoryCalculationDTO,
@@ -23,7 +24,7 @@ const categoryCalculation = (
 
         categoryMap[categoryId].totalScore += answer * weight;
 
-        categoryMap[categoryId].maxPossibleScore += 2 * weight;
+        categoryMap[categoryId].maxPossibleScore += MAX_RESPONSE * weight;
     }
 
     const categoryOutputs = Object.entries(categoryMap).map(
