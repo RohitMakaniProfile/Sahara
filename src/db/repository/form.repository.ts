@@ -25,14 +25,13 @@ const getFormStructure = async () => {
 
 const isChildBelongsToParent = async (
     childId: number,
-    parentId: number,
-): Promise<boolean> => {
+) => {
     const child = await prisma.child.findUnique({
         where: { id: childId },
         select: { parentId: true },
     });
 
-    return child?.parentId === parentId;
+    return child;
 };
 
 const AllValidQuestionsData = async (

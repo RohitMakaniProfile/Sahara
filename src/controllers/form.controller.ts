@@ -30,11 +30,10 @@ const formSubmissionData = asyncHandler<ProtectedRequest>(
             throw new BadRequestError('Answers are required');
         }
 
-        const isChildIdValid = await formRepository.isChildBelongsToParent(
+        const ChildIdValidity = await formRepository.isChildBelongsToParent(
             childId,
-            parentId,
         );
-        if (!isChildIdValid) {
+        if (!(ChildIdValidity?.parentId === parentId)) {
             throw new BadRequestError('Child does not belong to the parent');
         }
         const allValidQuestionData =
