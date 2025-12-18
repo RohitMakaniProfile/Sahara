@@ -34,7 +34,7 @@ const isChildBelongsToParent = async (
     return child;
 };
 
-const AllValidQuestionsData = async (
+const allValidQuestionsData = async (
     answers: { questionId: number; response: number }[],
 ): Promise<AllValidQuestionsDataDTO[] | null> => {
     const questionIds = Array.from(
@@ -114,7 +114,7 @@ const saveCategoryOutputs = async (
 export default {
     getFormStructure,
     isChildBelongsToParent,
-    AllValidQuestionsData,
+    allValidQuestionsData,
     createFormSubmission,
     saveCategoryOutputs,
 };

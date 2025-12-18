@@ -26,18 +26,15 @@ const formSubmissionData = asyncHandler<ProtectedRequest>(
     async (req: ProtectedRequest, res: Response) => {
         const parentId = req.user?.parentId;
         const { childId, answers } = req.body;
-        if (!Array.isArray(answers) || answers.length === 0) {
-            throw new BadRequestError('Answers are required');
-        }
 
-        const ChildIdValidity = await formRepository.isChildBelongsToParent(
+        const childIdValidity = await formRepository.isChildBelongsToParent(
             childId,
         );
-        if (!(ChildIdValidity?.parentId === parentId)) {
+        if (!(childIdValidity?.parentId === parentId)) {
             throw new BadRequestError('Child does not belong to the parent');
         }
         const allValidQuestionData =
-            await formRepository.AllValidQuestionsData(answers);
+            await formRepository.allValidQuestionsData(answers);
         if (!allValidQuestionData) {
             throw new BadRequestError('One or more questionIds are invalid');
         }
