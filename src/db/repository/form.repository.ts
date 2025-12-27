@@ -3,7 +3,6 @@ import type {
     AllValidQuestionsDataDTO,
     CategoryOutputCreateListDTO,
 } from '../../types/form.js';
-import { InternalError } from '../../core/ApiError.js';
 
 const getFormStructure = async () => {
     const categories = await prisma.autismCategory.findMany({
@@ -23,9 +22,7 @@ const getFormStructure = async () => {
     return categories;
 };
 
-const isChildBelongsToParent = async (
-    childId: number,
-) => {
+const isChildBelongsToParent = async (childId: number) => {
     const child = await prisma.child.findUnique({
         where: { id: childId },
         select: { parentId: true },
@@ -37,13 +34,13 @@ const isChildBelongsToParent = async (
 const allValidQuestionsData = async (
     answers: { questionId: number; response: number }[],
 ): Promise<AllValidQuestionsDataDTO[] | null> => {
-    const questionIds = Array.from(
-        new Set(answers.map((a: { questionId: number }) => a.questionId)),
-    );
+    const questionIds = Array.from(new Set(answers.map((a) => a.questionId)));
+
     const dbQuestions = await prisma.autismBehaviourQuestionnaire.findMany({
         where: { id: { in: questionIds } },
         select: { id: true, weight: true, categoryId: true },
     });
+
     if (dbQuestions.length !== questionIds.length) {
         return null;
     }
@@ -64,31 +61,25 @@ const createFormSubmission = async (
             select: { id: true },
         });
 
-        const submissionData = answers.map(
-            (a: { questionId: number; response: number }) => {
-                return {
-                    questionId: a.questionId,
-                    parentResponse: a.response,
-                    formId: formCreation.id,
-                };
-            },
-        );
+        const submissionData = answers.map((a) => ({
+            questionId: a.questionId,
+            parentResponse: a.response,
+            formId: formCreation.id,
+        }));
+
         await tx.autismBehaviourQuestionResponse.createMany({
             data: submissionData,
         });
+        
         const data = await tx.autismBehaviourForm.findUnique({
             where: { id: formCreation.id },
             select: {
                 id: true,
-                childId: true,
-                parentId: true,
                 questionResponses: {
                     select: {
                         parentResponse: true,
                         question: {
                             select: {
-                                id: true,
-                                question: true,
                                 weight: true,
                                 categoryId: true,
                             },
@@ -97,9 +88,7 @@ const createFormSubmission = async (
                 },
             },
         });
-        if (!data) {
-            throw new InternalError('Form submission failed');
-        }
+    
         return data;
     });
 };
@@ -111,6 +100,7 @@ const saveCategoryOutputs = async (
         data: categoryOutputData,
     });
 };
+
 export default {
     getFormStructure,
     isChildBelongsToParent,

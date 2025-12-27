@@ -1,3 +1,4 @@
+import { Gender, ParentChildRelations } from '@prisma/client';
 import z from 'zod';
 
 const ParentRegister = z.object({
@@ -29,12 +30,8 @@ const ChildRegister = z.object({
     name: z.string().min(1, 'Name is required'),
     age: z.number().min(0, 'Age must be a positive number'),
     dob: dobSchema,
-    gender: z.enum(
-        ['male', 'female', 'other'],
-        'Gender must be one of: male, female, other',
-    ),
-
-    parentId: z.string().min(1, 'Parent ID is required'),
+    gender: z.enum(Gender, 'Gender must be one of: male, female, other'),
+    relationWithParent: z.enum(ParentChildRelations),
 });
 
 export default {

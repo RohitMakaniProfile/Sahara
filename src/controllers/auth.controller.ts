@@ -4,13 +4,11 @@ import parentRepository from '../db/repository/parent.repository.js';
 import refreshRepository from '../db/repository/refreshToken.repository.js';
 import { PasswordUtils } from '../core/password.js';
 import jwtUtil from '../core/token.js';
-import { prisma } from '../db/prisma.js';
 import { BadRequestError } from '../core/ApiError.js';
 import { SuccessMsgResponse, SuccessResponse } from '../core/ApiResponse.js';
 import type { RefreshToken } from '@prisma/client';
 import { sendRefreshCookie } from '../services/auth.services.js';
 import { refreshTokenTtlMs } from '../config.js';
-import type { ProtectedRequest } from '../types/app-requests.js';
 import { configCookies } from '../helpers/cookie-options.js';
 
 // TODO: Add some headers to detect the device of the client request(Web/Mobile)
@@ -193,36 +191,9 @@ const logout = asyncHandler(async (req: Request, res: Response) => {
     new SuccessMsgResponse('Logged out').send(res);
 });
 
-const childRegister = asyncHandler<ProtectedRequest>(
-    async (req: ProtectedRequest, res: Response) => {
-        const parentId = req.user?.parentId;
-
-        const { name, dob, gender, relationWithParent } = req.body;
-
-        const parsedDob = new Date(dob);
-        if (Number.isNaN(parsedDob.getTime()))
-            throw new BadRequestError('Invalid DOB');
-
-        const child = await prisma.child.create({
-            data: {
-                name,
-                dob: parsedDob,
-                gender,
-                relationWithParent,
-                parent: { connect: { id: parentId } },
-            },
-        });
-
-        new SuccessResponse('Child Registered', {
-            child: { id: child.id, name: child.name, dob: child.dob },
-        }).send(res);
-    },
-);
-
 export default {
     register,
     login,
     refresh,
-    childRegister,
     logout,
 };

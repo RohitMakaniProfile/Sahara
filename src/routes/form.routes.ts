@@ -11,7 +11,7 @@ router.use(protect);
 
 router.get('/structure', formController.getForm);
 router.post(
-    '/submission',
+    '/submit',
     validator(formSschema.formSubmission, ValidationSource.BODY),
     formController.formSubmissionData,
 );

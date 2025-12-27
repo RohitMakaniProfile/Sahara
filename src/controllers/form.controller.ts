@@ -4,8 +4,9 @@ import { SuccessResponse } from '../core/ApiResponse.js';
 import type { QuestionnaireCategoryDTO } from '../types/form.js';
 import formRepository from '../db/repository/form.repository.js';
 import type { ProtectedRequest } from '../types/app-requests.js';
-import { BadRequestError } from '../core/ApiError.js';
+import { BadRequestError, InternalError } from '../core/ApiError.js';
 import formservices from '../services/form.services.js';
+import childRepository from '../db/repository/child.repository.js';
 
 const getForm = asyncHandler(async (_req: Request, res: Response) => {
     const form = await formRepository.getFormStructure();
@@ -24,25 +25,31 @@ const getForm = asyncHandler(async (_req: Request, res: Response) => {
 
 const formSubmissionData = asyncHandler<ProtectedRequest>(
     async (req: ProtectedRequest, res: Response) => {
-        const parentId = req.user?.parentId;
+        const parentId = req.user.parentId;
         const { childId, answers } = req.body;
 
-        const childIdValidity = await formRepository.isChildBelongsToParent(
-            childId,
-        );
-        if (!(childIdValidity?.parentId === parentId)) {
+        const parent = await childRepository.findParent(childId);
+
+        if (!parent) throw new BadRequestError('Parent does not exist.');
+
+        if (parent.id !== parentId)
             throw new BadRequestError('Child does not belong to the parent');
-        }
+
         const allValidQuestionData =
             await formRepository.allValidQuestionsData(answers);
-        if (!allValidQuestionData) {
+
+        if (!allValidQuestionData)
             throw new BadRequestError('One or more questionIds are invalid');
-        }
+
         const submissionData = await formRepository.createFormSubmission(
             answers,
             childId,
             parentId,
         );
+
+        if (!submissionData)
+            throw new InternalError('Failed to store response.');
+        
         const categoryOutputs =
             formservices.categoryCalculation(submissionData);
 
@@ -57,7 +64,7 @@ const formSubmissionData = asyncHandler<ProtectedRequest>(
         await formRepository.saveCategoryOutputs(categoryOutputData);
 
         new SuccessResponse('Form submitted successfully', {
-            formID: submissionData.id,
+            formId: submissionData.id,
         }).send(res);
     },
 );
