@@ -70,7 +70,7 @@ const createFormSubmission = async (
         await tx.autismBehaviourQuestionResponse.createMany({
             data: submissionData,
         });
-        
+
         const data = await tx.autismBehaviourForm.findUnique({
             where: { id: formCreation.id },
             select: {
@@ -88,7 +88,7 @@ const createFormSubmission = async (
                 },
             },
         });
-    
+
         return data;
     });
 };
