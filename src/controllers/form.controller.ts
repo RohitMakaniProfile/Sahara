@@ -49,7 +49,7 @@ const formSubmissionData = asyncHandler<ProtectedRequest>(
 
         if (!submissionData)
             throw new InternalError('Failed to store response.');
-        
+
         const categoryOutputs =
             formservices.categoryCalculation(submissionData);
 

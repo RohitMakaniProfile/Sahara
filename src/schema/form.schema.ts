@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_RESPONSE } from '../config.js';
 
 const formSubmission = z.object({
     childId: z.coerce.number('Child ID is required'),
@@ -10,7 +11,7 @@ const formSubmission = z.object({
                 response: z.coerce
                     .number('Answer value is required')
                     .min(0, 'Response must be >=0')
-                    .max(2, 'Response must be <=2'),
+                    .max(MAX_RESPONSE, `Response must be <=${MAX_RESPONSE}`),
             }),
         )
         .nonempty('Answers are required'),

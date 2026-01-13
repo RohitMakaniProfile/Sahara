@@ -10,17 +10,42 @@ const create = async (data: Prisma.ChildUncheckedCreateInput) => {
 const findParent = async (childId: number) => {
     const data = await prisma.child.findUnique({
         where: {
-            id: childId
+            id: childId,
         },
         select: {
-            parent: true
-        }
+            parent: true,
+        },
     });
     return data?.parent;
-}
+};
 
+const latestFormResults = async (childId: number, parentId: number) => {
+    const result = await prisma.autismBehaviourForm.findFirst({
+        where: { childId, parentId },
+        orderBy: { createdAt: 'desc' },
+        select: {
+            id: true,
+            createdAt: true,
+            categoryOutputs: {
+                select: {
+                    totalScore: true,
+                    maxPossibleScore: true,
+                    normalizedScore: true,
+                    category: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+    return result;
+};
 
 export default {
     create,
-    findParent
+    findParent,
+    latestFormResults,
 };
