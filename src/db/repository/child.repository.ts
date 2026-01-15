@@ -10,17 +10,16 @@ const create = async (data: Prisma.ChildUncheckedCreateInput) => {
 const findParent = async (childId: number) => {
     const data = await prisma.child.findUnique({
         where: {
-            id: childId
+            id: childId,
         },
         select: {
-            parent: true
-        }
+            parent: true,
+        },
     });
     return data?.parent;
-}
-
+};
 
 export default {
     create,
-    findParent
+    findParent,
 };
