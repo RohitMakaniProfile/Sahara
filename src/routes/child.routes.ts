@@ -14,5 +14,9 @@ router.post(
     validator(authSchema.ChildRegister, ValidationSource.BODY),
     childController.childRegister,
 );
+router.get(
+    '/:childId/assessment/latest',
+    childController.getChildLatestFormResults,
+);
 
 export default router;

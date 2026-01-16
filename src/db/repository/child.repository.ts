@@ -19,7 +19,33 @@ const findParent = async (childId: number) => {
     return data?.parent;
 };
 
+const latestFormResults = async (childId: number, parentId: number) => {
+    const result = await prisma.autismBehaviourForm.findFirst({
+        where: { childId, parentId },
+        orderBy: { createdAt: 'desc' },
+        select: {
+            id: true,
+            createdAt: true,
+            categoryOutputs: {
+                select: {
+                    totalScore: true,
+                    maxPossibleScore: true,
+                    normalizedScore: true,
+                    category: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+    return result;
+};
+
 export default {
     create,
     findParent,
+    latestFormResults,
 };
