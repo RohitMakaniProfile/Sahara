@@ -70,8 +70,8 @@ model Parent {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  forumPosts           ForumPost[]
-  comments             Comment[]
+  forumPosts           CommunityPost[]
+  comments             PostComment[]
   votes                Vote[]
   children             Child[]
   refreshTokens        RefreshToken[]
@@ -204,7 +204,7 @@ enum VoteType {
   DOWNVOTE
 }
 
-model ForumPost {
+model CommunityPost {
   id      Int    @id @default(autoincrement())
   title   String
   content String
@@ -212,7 +212,7 @@ model ForumPost {
   authorId Int
   author   Parent @relation(fields: [authorId], references: [id])
 
-  comments Comment[]
+  comments PostComment[]
   votes    Vote[]
 
   createdAt DateTime @default(now())
@@ -221,7 +221,7 @@ model ForumPost {
   @@index([authorId])
 }
 
-model Comment {
+model PostComment {
   id      Int    @id @default(autoincrement())
   content String
 
@@ -229,7 +229,7 @@ model Comment {
   author   Parent @relation(fields: [authorId], references: [id])
 
   postId Int
-  post   ForumPost @relation(fields: [postId], references: [id])
+  post   CommunityPost @relation(fields: [postId], references: [id])
 
   // parentCommentId is the parent of the replied comment
   // Comment-A (id=1, parentCommentId=null)
@@ -238,8 +238,8 @@ model Comment {
   //      |- Comment-C (id=10, parentCommentId=1)
 
   parentCommentId Int?
-  parent          Comment?  @relation("NestedComments", fields: [parentCommentId], references: [id])
-  replies         Comment[] @relation("NestedComments")
+  parent          PostComment?  @relation("NestedComments", fields: [parentCommentId], references: [id])
+  replies         PostComment[] @relation("NestedComments")
 
   votes Vote[]
 
@@ -258,10 +258,10 @@ model Vote {
   parent   Parent @relation(fields: [parentId], references: [id])
 
   postId Int?
-  post   ForumPost? @relation(fields: [postId], references: [id])
+  post   CommunityPost? @relation(fields: [postId], references: [id])
 
   commentId Int?
-  comment   Comment? @relation(fields: [commentId], references: [id])
+  comment   PostComment? @relation(fields: [commentId], references: [id])
 
   createdAt DateTime @default(now())
 
