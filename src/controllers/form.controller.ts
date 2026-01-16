@@ -50,11 +50,28 @@ const formSubmissionData = asyncHandler<ProtectedRequest>(
         if (!submissionData)
             throw new InternalError('Failed to store response.');
 
+        if (submissionData.length === 0)
+            throw new InternalError('Failed to create submissions.');
+
+        if (!submissionData[0]?.formId) {
+            throw new InternalError('formId missing in submission data');
+        }
+
+        const formId = submissionData[0].formId;
+
+        const santitizedData = {
+            id: formId,
+            questionResponses: submissionData.map((data) => ({
+                parentResponse: data.parentResponse,
+                question: data.question,
+            })),
+        };
+
         const categoryOutputs =
-            formservices.categoryCalculation(submissionData);
+            formservices.categoryCalculation(santitizedData);
 
         const categoryOutputData = categoryOutputs.map((co) => ({
-            formId: submissionData.id,
+            formId: formId,
             categoryId: co.categoryId,
             totalScore: co.totalScore,
             maxPossibleScore: co.maxPossibleScore,
@@ -64,7 +81,7 @@ const formSubmissionData = asyncHandler<ProtectedRequest>(
         await formRepository.saveCategoryOutputs(categoryOutputData);
 
         new SuccessResponse('Form submitted successfully', {
-            formId: submissionData.id,
+            formId,
         }).send(res);
     },
 );

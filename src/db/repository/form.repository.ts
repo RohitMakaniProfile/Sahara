@@ -71,20 +71,13 @@ const createFormSubmission = async (
             data: submissionData,
         });
 
-        const data = await tx.autismBehaviourForm.findUnique({
-            where: { id: formCreation.id },
+        const data = await tx.autismBehaviourQuestionResponse.findMany({
+            where: { formId: formCreation.id },
             select: {
-                id: true,
-                questionResponses: {
-                    select: {
-                        parentResponse: true,
-                        question: {
-                            select: {
-                                weight: true,
-                                categoryId: true,
-                            },
-                        },
-                    },
+                parentResponse: true,
+                formId: true,
+                question: {
+                    select: { weight: true, categoryId: true },
                 },
             },
         });

@@ -8,6 +8,7 @@ const router = express.Router();
 
 router.post('/posts', protect, forumController.createForumPost);
 router.get('/posts', forumController.getForumPosts);
+
 // router.get('/posts/:id',getForumPostById);
 // router.put('/posts/:id',updateForumPost);
 // router.delete('/posts/:id',deleteForumPost);
