@@ -12,17 +12,16 @@ const router = express.Router();
 // [X][X] create posts
 // [X][X] delete post
 // [X][X] edit title and content of the post
-// [X][X] Get Post title and content
-// [X][] add comment in post
-// [] edit comment
-// [] delete comment
-// [] reply comment of the post 
-// [] get all the posts with pagination - don't get full content from DB, 
-// [] get all the comments of the post with pagination 
+// [][] Get Post title, content and comments
+// [X][X] add comment in post
+// [X][] edit comment
+// [X][] delete comment
+// [X][] reply comment of the post
+// [X][X] get all the posts with pagination - don't get full content from DB,
+// [] get all the comments of the post with pagination
 // [] get replies of particular comments with pagination
 // [] upvote and downvote in post
 // [] upvote and downvote in comments
-
 
 router.use(protect);
 
@@ -35,30 +34,47 @@ router.post(
 router.delete(
     '/:postId',
     validator(forumSchema.PostParams, ValidationSource.PARAM),
-    communityPostController.deletePost
+    communityPostController.deletePost,
 );
 
 router.patch(
     '/:postId',
     validator(forumSchema.PostParams, ValidationSource.PARAM),
     validator(forumSchema.UpdateCommunityPost, ValidationSource.BODY),
-    communityPostController.updateCommunityPost
+    communityPostController.updateCommunityPost,
 );
 
 router.get(
     '/:postId',
     validator(forumSchema.PostParams, ValidationSource.PARAM),
-    communityPostController.getPostDetails
+    communityPostController.getPostDetails,
 );
 
-router.get(
+router.post(
     '/:postId/comment',
     validator(forumSchema.PostParams, ValidationSource.PARAM),
     validator(forumSchema.CreateComment, ValidationSource.BODY),
-    communityPostController.createComment
+    communityPostController.createComment,
 );
 
-router.get('/posts', communityPostController.getCommunityPosts);
+router.patch(
+    '/:postId/comment/:commentId',
+    validator(forumSchema.CommentParams, ValidationSource.PARAM),
+    validator(forumSchema.UpdateComment, ValidationSource.BODY),
+    communityPostController.updateComment,
+);
+
+router.delete(
+    '/:postId/comment/:commentId',
+    validator(forumSchema.CommentParams, ValidationSource.PARAM),
+    communityPostController.deleteComment,
+);
+
+router.get(
+    '/', 
+    validator(forumSchema.PaginationPostsQuery, ValidationSource.QUERY),
+    communityPostController.getCommunityPosts
+);
 
 // router.get('/posts/:id',getForumPostById);
 // router.put('/posts/:id',updateForumPost);

@@ -18,11 +18,25 @@ const PostParams = z.object({
     postId: z.coerce.number('Post ID is required.'),
 });
 
+const CommentParams = PostParams.extend({
+    commentId: z.coerce.number('Comment ID is required.'),
+});
+
+const PaginationPostsQuery = z.object({
+    cursorCreatedAt: z.date().optional(),
+    cursorId: z.coerce.number().optional(),
+    limit: z.coerce.number().default(10),
+});
+
 const UpdateCommunityPost = CreateCommunityPost.partial();
+const UpdateComment = CreateComment.optional();
 
 export type CommunityPostSchema = {
     UpdateCommunityPost: z.infer<typeof UpdateCommunityPost>;
     CreateComment: z.infer<typeof CreateComment>;
+    CommentParams: z.infer<typeof CommentParams>;
+    UpdateComment: z.infer<typeof UpdateComment>;
+    PaginationPostsQuery: z.infer<typeof PaginationPostsQuery>;
 };
 
 export default {
@@ -31,4 +45,7 @@ export default {
     VoteSchema,
     PostParams,
     UpdateCommunityPost,
+    CommentParams,
+    UpdateComment,
+    PaginationPostsQuery,
 };

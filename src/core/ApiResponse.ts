@@ -132,9 +132,11 @@ export class TokenRefreshResponse extends ApiResponse {
     }
 }
 
-
 export class SuccessCreatedResponse<T> extends ApiResponse {
-    constructor(message: string, private data: T) {
+    constructor(
+        message: string,
+        private data: T,
+    ) {
         super(ResponseStatus.CREATED, message);
     }
 

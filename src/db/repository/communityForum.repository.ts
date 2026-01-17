@@ -18,50 +18,73 @@ const createNewPost = async (
     return postdata;
 };
 
-const getAllPosts = async ({
-    limit,
-    skip,
-}: {
-    limit: number;
-    skip: number;
-}) => {
-    const [posts, total] = await prisma.$transaction([
-        prisma.communityPost.findMany({
-            skip,
-            take: limit,
-            orderBy: { createdAt: 'desc' },
-            select: {
-                id: true,
-                title: true,
-                content: true,
-                createdAt: true,
-                updatedAt: true,
-                author: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
-                },
-            },
-        }),
-        // total posts count
-        prisma.communityPost.count(),
-    ]);
+const getAllPosts = async (
+    userId: number,
+    limit: number,
+    cursorCreatedAt: Date | null,
+    cursorId: number | null,
+) => {
+    const posts = await prisma.$queryRaw<
+        {
+            id: bigint;
+            title: string;
+            content: string;
+            commentCount: bigint;
+            upvotes: bigint;
+            downvotes: bigint;
+            myVote: 'UPVOTE' | 'DOWNVOTE' | null;
+            createdAt: Date;
+        }[]
+    >`
+SELECT
+  p.id,
+  p.title,
+  LEFT(p.content, 200) AS content,
+  p.created_at AS "createdAt",
 
-    return {
-        posts,
-        total,
-    };
+  COUNT(DISTINCT c.id) AS "commentCount",
+
+  COUNT(DISTINCT v.id) FILTER (WHERE v.type = 'UPVOTE') AS upvotes,
+  COUNT(DISTINCT v.id) FILTER (WHERE v.type = 'DOWNVOTE') AS downvotes,
+
+  MAX(
+    CASE
+      WHEN v.parent_id = ${userId} THEN v.type
+      ELSE NULL
+    END
+  ) AS "myVote"
+
+FROM community_posts p
+
+LEFT JOIN post_comments c
+  ON c.post_id = p.id AND c.is_active = true
+
+LEFT JOIN votes v
+  ON v.post_id = p.id
+
+WHERE
+  p.is_active = true
+  AND (
+    ${cursorCreatedAt}::timestamp IS NULL
+    OR (p.created_at, p.id) < (${cursorCreatedAt}::timestamp, ${cursorId}::integer)
+  )
+
+GROUP BY p.id
+ORDER BY p.created_at DESC, p.id DESC
+LIMIT ${limit + 1};
+`;
+    return posts;
 };
 
 const checkPostById = async (posId: number) => {
     return await prisma.communityPost.findUnique({
         where: {
             id: posId,
+            isActive: true,
         },
         select: {
             id: true,
-            authorId: true
+            authorId: true,
         },
     });
 };
@@ -78,10 +101,13 @@ const updatePost = async (
     });
 };
 
-const deletePost = async (postId: number) => {
-    return await prisma.communityPost.delete({
+const softDeletePost = async (postId: number) => {
+    return await prisma.communityPost.update({
         where: {
             id: postId,
+        },
+        data: {
+            isActive: true,
         },
     });
 };
@@ -118,12 +144,39 @@ const createComment = async (
     });
 };
 
+const checkCommentById = async (commentId: number) => {
+    return await prisma.postComment.findUnique({
+        where: { id: commentId },
+    });
+};
+
+const updateComment = async (commentId: number, content: string) => {
+    return await prisma.postComment.update({
+        where: { id: commentId },
+        data: {
+            content,
+        },
+    });
+};
+
+const softDeleteComment = async (commentId: number) => {
+    return await prisma.postComment.update({
+        where: { id: commentId },
+        data: {
+            isActive: false,
+        },
+    });
+};
+
 export default {
     createNewPost,
     getAllPosts,
     checkPostById,
     updatePost,
-    deletePost,
+    softDeletePost,
     getPostById,
-    createComment
+    createComment,
+    checkCommentById,
+    updateComment,
+    softDeleteComment,
 };

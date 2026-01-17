@@ -5,7 +5,6 @@ import { BadRequestError } from './../core/ApiError.js';
 import { ValidationSource } from './../helpers/validator.js';
 import logger from '../core/logger.js';
 
-
 export const validator = (
     schema: ZodSchema,
     source: ValidationSource = ValidationSource.BODY,
@@ -17,8 +16,9 @@ export const validator = (
             logger.error(result.error);
             return next(new BadRequestError(z.prettifyError(result.error)));
         }
-        req[source] = result.data;
-        
+
+        Object.assign(req[source], result.data);
+
         next();
     };
 };

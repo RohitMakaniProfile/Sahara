@@ -1,4 +1,3 @@
-import type { Response, Request } from 'express';
 import type { ProtectedRequest } from '../types/app-requests.js';
 import { asyncHandler } from '../core/asyncHandler.js';
 import postRepository from '../db/repository/communityForum.repository.js';
@@ -21,47 +20,56 @@ function verifyOwnershipOfThePost(postAuthorId: number, currentUserId: number) {
         throw new ForbiddenError('Not allowed to edit the post.');
 }
 
-const createCommunityPost = asyncHandler<ProtectedRequest>(
-    async (req, res: Response) => {
-        const parentId = req.user.parentId;
-        const title = req.body.title;
-        const content = req.body.content;
+const createCommunityPost = asyncHandler<ProtectedRequest>(async (req, res) => {
+    const parentId = req.user.parentId;
+    const title = req.body.title;
+    const content = req.body.content;
 
-        const post = await postRepository.createNewPost(
-            title,
-            content,
-            parentId,
-        );
+    const post = await postRepository.createNewPost(title, content, parentId);
 
-        new SuccessCreatedResponse('Forum post created', post).send(res);
-    },
-);
+    new SuccessCreatedResponse('Forum post created', post).send(res);
+});
 
-const getCommunityPosts = asyncHandler(async (req: Request, res: Response) => {
-    const limitFromQuery = Number(req.query.limit);
-    const skipFromQuery = Number(req.query.skip);
+const getCommunityPosts = asyncHandler<ProtectedRequest>(async (req, res) => {
+    const cursorCreatedAt = req.params.cursorCreatedAt
+        ? new Date(req.params.cursorCreatedAt)
+        : null;
+    const cursorId = req.params.cursorId ? Number(req.params.cursorId) : null;
+    const limit = Number(req.params.limit ?? 10);
 
-    const limit =
-        Number.isFinite(limitFromQuery) && limitFromQuery > 0
-            ? limitFromQuery
-            : 10;
+    const posts = await postRepository.getAllPosts(
+        req.user.parentId,
+        Number(limit),
+        cursorCreatedAt,
+        cursorId,
+    );
 
-    const skip =
-        Number.isFinite(skipFromQuery) && skipFromQuery >= 0
-            ? skipFromQuery
-            : 0;
+    if (posts.length === 0)
+        new SuccessResponse('No community posts', {
+            posts,
+            hasMore: false,
+            nextCursor: {
+                createdAt: null,
+                id: null,
+            },
+        }).send(res);
 
-    const { posts, total } = await postRepository.getAllPosts({
-        limit,
-        skip,
-    });
-    const hasMore = skip + posts.length < total;
+    const hasMore = posts.length > limit;
+    if (hasMore) posts.pop();
+    const lastPost = posts[posts.length - 1];
 
     new SuccessResponse('Forum posts retrieved', {
-        posts,
-        total,
-        limit,
-        skip,
+        posts: posts.map(post => ({ 
+            ...post, 
+            id: Number(post.id),
+            commentCount: post.commentCount.toString(),
+            upvotes: post.upvotes.toString(),
+            downvotes: post.downvotes.toString()
+        })),
+        nextCursor: {
+            id: lastPost?.id,
+            createdAt: lastPost?.createdAt,
+        },
         hasMore,
     }).send(res);
 });
@@ -87,7 +95,7 @@ const deletePost = asyncHandler<ProtectedRequest>(async (req, res) => {
     const post = await verifyPostExist(postId);
     verifyOwnershipOfThePost(post.authorId, req.user.parentId);
 
-    await postRepository.deletePost(postId);
+    await postRepository.softDeletePost(postId);
 
     new SuccessDeletionResponse().send(res);
 });
@@ -114,6 +122,52 @@ const createComment = asyncHandler<ProtectedRequest>(async (req, res) => {
     new SuccessCreatedResponse('Comment Created.', createdComment).send(res);
 });
 
+async function checkComment(commentId: number) {
+    const comment = await postRepository.checkCommentById(commentId);
+    if (!comment) throw new NotFoundError('No comment found with given ID.');
+
+    return comment;
+}
+
+const updateComment = asyncHandler<ProtectedRequest>(async (req, res) => {
+    const commentId = Number(req.params.commentId);
+    const postId = Number(req.params.postId);
+
+    const comment = await checkComment(commentId);
+
+    if (comment.postId !== postId)
+        throw new NotFoundError('Comment not found for this post.');
+
+    if (comment.authorId !== req.user.parentId)
+        throw new ForbiddenError('Comment does not belong to the user.');
+
+    const updatedComment = await postRepository.updateComment(
+        commentId,
+        req.body.content,
+    );
+
+    new SuccessResponse('Comment updated successfully.', updatedComment).send(
+        res,
+    );
+});
+
+const deleteComment = asyncHandler<ProtectedRequest>(async (req, res) => {
+    const commentId = Number(req.params.commentId);
+    const postId = Number(req.params.postId);
+
+    const comment = await checkComment(commentId);
+
+    if (comment.postId !== postId)
+        throw new NotFoundError('Comment not found for this post.');
+
+    if (comment.authorId !== req.user.parentId)
+        throw new ForbiddenError('Comment does not belong to the user.');
+
+    await postRepository.softDeleteComment(commentId);
+
+    new SuccessDeletionResponse().send(res);
+});
+
 export default {
     createCommunityPost,
     getCommunityPosts,
@@ -121,4 +175,6 @@ export default {
     deletePost,
     getPostDetails,
     createComment,
+    updateComment,
+    deleteComment,
 };

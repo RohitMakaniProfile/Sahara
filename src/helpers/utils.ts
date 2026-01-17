@@ -1,7 +1,5 @@
-
-
 export function cleanObject<T extends Record<string, unknown>>(obj: T) {
-    const result = {} as Record<string, unknown>
+    const result = {} as Record<string, unknown>;
 
     for (const key in obj) {
         const value = obj[key];
