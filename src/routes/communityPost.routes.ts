@@ -18,15 +18,16 @@ const router = express.Router();
 // [X][] delete comment
 // [X][] reply comment of the post
 // [X][X] get all the posts with pagination - don't get full content from DB,
-// [] get all the comments of the post with pagination
-// [] get replies of particular comments with pagination
-// [] upvote and downvote in post
-// [] upvote and downvote in comments
+// [X][] get all the comments of the post with pagination
+// [X][] get replies of particular comments with pagination
+// [X][X] upvote and downvote in post
+// [X][] upvote and downvote in comments
+// [X][] reply to a comment
 
 router.use(protect);
 
 router.post(
-    '/',
+    '/create',
     validator(forumSchema.CreateCommunityPost),
     communityPostController.createCommunityPost,
 );
@@ -74,6 +75,42 @@ router.get(
     '/', 
     validator(forumSchema.PaginationPostsQuery, ValidationSource.QUERY),
     communityPostController.getCommunityPosts
+);
+
+// vote on post
+router.post(
+    '/:postId/vote',
+    validator(forumSchema.PostParams, ValidationSource.PARAM),
+    validator(forumSchema.VoteSchema, ValidationSource.BODY),
+    communityPostController.voteOnPost
+)
+// vote on comment
+router.post(
+  '/:postId/comments/:commentId/vote',
+  validator(forumSchema.CommentParams, ValidationSource.PARAM),
+  validator(forumSchema.VoteSchema, ValidationSource.BODY),
+  communityPostController.voteOnComment,
+);
+// get all parent-comments for a post
+router.get(
+  '/:postId/comments',
+  validator(forumSchema.PostParams, ValidationSource.PARAM),
+  validator(forumSchema.PaginationPostsQuery, ValidationSource.QUERY),
+  communityPostController.getCommentsForPost,
+);
+// get the  top-level replies on a comment
+router.get(
+  '/:postId/comments/:commentId/replies',
+  validator(forumSchema.CommentParams, ValidationSource.PARAM),
+  validator(forumSchema.PaginationPostsQuery, ValidationSource.QUERY),
+  communityPostController.getRepliesForComment,
+);
+// reply to a comment
+router.post(
+  '/:postId/comments/:commentId/reply',
+  validator(forumSchema.CommentParams, ValidationSource.PARAM),
+  validator(forumSchema.CreateComment, ValidationSource.BODY),
+  communityPostController.replyToComment,
 );
 
 // router.get('/posts/:id',getForumPostById);

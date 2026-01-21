@@ -1,6 +1,7 @@
 import { prisma } from '../prisma.js';
 import type { CommunityPostSchema } from '../../schema/forum.schema.js';
 import { cleanObject } from '../../helpers/utils.js';
+import type { CommentWithVotes } from '../../schema/forum.schema.js';
 
 const createNewPost = async (
     title: string,
@@ -34,6 +35,7 @@ const getAllPosts = async (
             downvotes: bigint;
             myVote: 'UPVOTE' | 'DOWNVOTE' | null;
             createdAt: Date;
+            hasComments: boolean;
         }[]
     >`
 SELECT
@@ -41,6 +43,14 @@ SELECT
   p.title,
   LEFT(p.content, 200) AS content,
   p.created_at AS "createdAt",
+
+  EXISTS (
+    SELECT 1
+    FROM post_comments pc
+    WHERE pc.post_id = p.id
+        AND pc.is_active = true
+    ) AS "hasComments",
+
 
   COUNT(DISTINCT c.id) AS "commentCount",
 
@@ -69,7 +79,7 @@ WHERE
     OR (p.created_at, p.id) < (${cursorCreatedAt}::timestamp, ${cursorId}::integer)
   )
 
-GROUP BY p.id
+GROUP BY p.id, p.title, p.content, p.created_at
 ORDER BY p.created_at DESC, p.id DESC
 LIMIT ${limit + 1};
 `;
@@ -168,6 +178,175 @@ const softDeleteComment = async (commentId: number) => {
     });
 };
 
+const voteOnPost = async (
+    userId: number,
+    postId: number,
+    vote: CommunityPostSchema['VoteSchema'],
+) => {
+    const result = await prisma.$transaction(async (tx) => {
+        const existingVote = await tx.vote.findFirst({
+            where: { parentId: userId, postId },
+        });
+
+        if (existingVote) {
+            if (existingVote.type === vote.type) {
+                await tx.vote.delete({ where: { id: existingVote.id } });
+                return null;
+            }
+
+            return tx.vote.update({
+                where: { id: existingVote.id },
+                data: { type: vote.type },
+            });
+        }
+
+        return tx.vote.create({
+            data: {
+                parentId: userId,
+                postId,
+                type: vote.type,
+            },
+        });
+    });
+
+    return result;
+};
+
+const voteOnComment = async (
+    userId: number,
+    commentId: number,
+    vote: CommunityPostSchema['VoteSchema'],
+) => {
+    const result = await prisma.$transaction(async (tx) => {
+        const existingVote = await tx.vote.findFirst({
+            where: { parentId: userId, commentId },
+        });
+
+        if (existingVote) {
+            if (existingVote.type === vote.type) {
+                await tx.vote.delete({ where: { id: existingVote.id } });
+                return null;
+            }
+
+            return tx.vote.update({
+                where: { id: existingVote.id },
+                data: { type: vote.type },
+            });
+        }
+
+        return tx.vote.create({
+            data: {
+                parentId: userId,
+                commentId,
+                type: vote.type,
+            },
+        });
+    });
+
+    return result;
+};
+
+const getCommentsForPost = async (
+  userId: number,
+  postId: number,
+  limit: number,
+  cursorCreatedAt: Date | null,
+  cursorId: number | null,
+): Promise<CommentWithVotes[]> => {
+  return prisma.$queryRaw<CommentWithVotes[]>`
+    SELECT
+      c.id,
+      c.content,
+      c.created_at AS "createdAt",
+
+      COUNT(v.id) FILTER (WHERE v.type = 'UPVOTE') AS upvotes,
+      COUNT(v.id) FILTER (WHERE v.type = 'DOWNVOTE') AS downvotes,
+
+      MAX(
+        CASE
+          WHEN v.parent_id = ${userId} THEN v.type
+          ELSE NULL
+        END
+      ) AS "myVote",
+
+      EXISTS (
+        SELECT 1
+        FROM post_comments r
+        WHERE r.parent_comment_id = c.id
+          AND r.is_active = true
+      ) AS "hasReplies"
+
+    FROM post_comments c
+    LEFT JOIN votes v
+      ON v.comment_id = c.id
+
+    WHERE
+      c.post_id = ${postId}
+      AND c.is_active = true
+      AND c.parent_comment_id IS NULL
+      AND (
+        ${cursorCreatedAt}::timestamp IS NULL
+        OR (c.created_at, c.id) > (${cursorCreatedAt}::timestamp, ${cursorId}::integer)
+      )
+
+    GROUP BY c.id, c.content, c.created_at
+    ORDER BY c.created_at ASC, c.id ASC
+    LIMIT ${limit + 1};
+  `;
+};
+
+
+const getRepliesForComment = async (
+  postId: number,
+  userId: number,
+  commentId: number,
+  limit: number,
+  cursorCreatedAt: Date | null,
+  cursorId: number | null,
+): Promise<CommentWithVotes[]> => {
+  return prisma.$queryRaw<CommentWithVotes[]>`
+    SELECT
+      c.id,
+      c.content,
+      c.created_at AS "createdAt",
+
+      COUNT(v.id) FILTER (WHERE v.type = 'UPVOTE') AS upvotes,
+      COUNT(v.id) FILTER (WHERE v.type = 'DOWNVOTE') AS downvotes,
+
+      MAX(
+        CASE
+          WHEN v.parent_id = ${userId} THEN v.type
+          ELSE NULL
+        END
+      ) AS "myVote",
+
+      EXISTS (
+        SELECT 1
+        FROM post_comments r
+        WHERE r.parent_comment_id = c.id
+          AND r.is_active = true
+      ) AS "hasReplies"
+
+    FROM post_comments c
+    LEFT JOIN votes v
+      ON v.comment_id = c.id
+
+    WHERE
+      c.post_id = ${postId}
+      AND c.parent_comment_id = ${commentId}
+      AND c.is_active = true
+      AND (
+        ${cursorCreatedAt}::timestamp IS NULL
+        OR (c.created_at, c.id) > (${cursorCreatedAt}::timestamp, ${cursorId}::integer)
+      )
+
+    GROUP BY c.id, c.content, c.created_at
+    ORDER BY c.created_at ASC, c.id ASC
+    LIMIT ${limit + 1};
+  `;
+};
+
+
 export default {
     createNewPost,
     getAllPosts,
@@ -179,4 +358,8 @@ export default {
     checkCommentById,
     updateComment,
     softDeleteComment,
+    voteOnPost,
+    voteOnComment,
+    getCommentsForPost,
+    getRepliesForComment,
 };

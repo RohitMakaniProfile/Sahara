@@ -23,7 +23,7 @@ const CommentParams = PostParams.extend({
 });
 
 const PaginationPostsQuery = z.object({
-    cursorCreatedAt: z.date().optional(),
+    cursorCreatedAt: z.coerce.date().optional(),
     cursorId: z.coerce.number().optional(),
     limit: z.coerce.number().default(10),
 });
@@ -37,6 +37,16 @@ export type CommunityPostSchema = {
     CommentParams: z.infer<typeof CommentParams>;
     UpdateComment: z.infer<typeof UpdateComment>;
     PaginationPostsQuery: z.infer<typeof PaginationPostsQuery>;
+    VoteSchema: z.infer<typeof VoteSchema>;
+};
+export type CommentWithVotes = {
+  id: bigint;
+  content: string;
+  createdAt: Date;
+  upvotes: bigint;
+  downvotes: bigint;
+  myVote: 'UPVOTE' | 'DOWNVOTE' | null;
+  hasReplies: boolean;
 };
 
 export default {
@@ -48,4 +58,6 @@ export default {
     CommentParams,
     UpdateComment,
     PaginationPostsQuery,
+   
 };
+
