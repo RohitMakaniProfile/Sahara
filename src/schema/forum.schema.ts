@@ -7,7 +7,7 @@ const CreateCommunityPost = z.object({
 
 const CreateComment = z.object({
     content: z.string().min(2, 'Comment too short'),
-    commentParentId: z.coerce.number().optional(),
+    parentCommentId: z.coerce.number().optional(),
 });
 
 const VoteSchema = z.object({
@@ -29,7 +29,7 @@ const PaginationPostsQuery = z.object({
 });
 
 const UpdateCommunityPost = CreateCommunityPost.partial();
-const UpdateComment = CreateComment.optional();
+const UpdateComment = CreateComment.pick({ content: true }).optional();
 
 export type CommunityPostSchema = {
     UpdateCommunityPost: z.infer<typeof UpdateCommunityPost>;
@@ -45,6 +45,7 @@ export type CommentWithVotes = {
   createdAt: Date;
   upvotes: bigint;
   downvotes: bigint;
+  isActive: boolean;
   myVote: 'UPVOTE' | 'DOWNVOTE' | null;
   hasReplies: boolean;
 };

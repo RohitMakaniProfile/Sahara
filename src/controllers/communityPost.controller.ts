@@ -8,6 +8,7 @@ import {
 } from '../core/ApiResponse.js';
 import { ForbiddenError, NotFoundError } from '../core/ApiError.js';
 import type { CommunityPostSchema } from '../schema/forum.schema.js';
+import _ from 'lodash';
 
 async function verifyPostExist(postId: number) {
     const post = await postRepository.checkPostById(postId);
@@ -43,7 +44,7 @@ const getCommunityPosts = asyncHandler<ProtectedRequest>(async (req, res) => {
         cursorId,
     );
 
-    if (posts.length === 0){
+    if (posts.length === 0) {
         new SuccessResponse('No community posts', {
             posts,
             hasMore: false,
@@ -174,7 +175,7 @@ const voteOnPost = asyncHandler<ProtectedRequest>(async (req, res) => {
     const postId = Number(req.params.postId);
     const vote = req.body as CommunityPostSchema['VoteSchema'];
 
-    const post = await verifyPostExist(postId);
+    await verifyPostExist(postId);
 
     const result = await postRepository.voteOnPost(
         req.user.parentId,
@@ -211,7 +212,7 @@ const voteOnComment = asyncHandler<ProtectedRequest>(async (req, res) => {
     }).send(res);
 });
 
-const getCommentsForPost = asyncHandler<ProtectedRequest>(async (req , res) => {
+const getCommentsForPost = asyncHandler<ProtectedRequest>(async (req, res) => {
     const postId = Number(req.params.postId);
     await verifyPostExist(postId);
 
@@ -220,6 +221,7 @@ const getCommentsForPost = asyncHandler<ProtectedRequest>(async (req , res) => {
         : null;
     const cursorId = req.query.cursorId ? Number(req.query.cursorId) : null;
     const limit = Number(req.query.limit ?? 10);
+
     const comments = await postRepository.getCommentsForPost(
         req.user.parentId,
         postId,
@@ -228,7 +230,7 @@ const getCommentsForPost = asyncHandler<ProtectedRequest>(async (req , res) => {
         cursorId,
     );
 
-    if (comments.length === 0){
+    if (comments.length === 0) {
         new SuccessResponse('No comments for this post', {
             comments,
             hasMore: false,
@@ -246,11 +248,12 @@ const getCommentsForPost = asyncHandler<ProtectedRequest>(async (req , res) => {
 
     new SuccessResponse('Comments retrieved', {
         comments: comments.map((comment) => ({
-            ...comment,
+            ..._.omit(comment, ['content']),
             id: Number(comment.id),
             upvotes: comment.upvotes.toString(),
             downvotes: comment.downvotes.toString(),
             hasReplies: comment.hasReplies,
+            ...(comment.isActive ? { content: comment.content } : {}),
         })),
         nextCursor: {
             id: lastComment?.id,
@@ -258,85 +261,64 @@ const getCommentsForPost = asyncHandler<ProtectedRequest>(async (req , res) => {
         },
         hasMore,
     }).send(res);
-
 });
 
-const getRepliesForComment = asyncHandler<ProtectedRequest>(async (req , res) => {
-    const postId = Number(req.params.postId);
-    const commentId = Number(req.params.commentId);
-    await verifyPostExist(postId);
-    const comment = await checkComment(commentId);
+const getRepliesForComment = asyncHandler<ProtectedRequest>(
+    async (req, res) => {
+        const postId = Number(req.params.postId);
+        const commentId = Number(req.params.commentId);
+        await verifyPostExist(postId);
+        const comment = await checkComment(commentId);
 
-    if (comment.postId !== postId)
-        throw new NotFoundError('Comment not found for this post.');
+        if (comment.postId !== postId)
+            throw new NotFoundError('Comment not found for this post.');
 
-    const cursorCreatedAt = req.query.cursorCreatedAt
-        ? new Date(req.query.cursorCreatedAt as string)
-        : null;
-    const cursorId = req.query.cursorId ? Number(req.query.cursorId) : null;
-    const limit = Number(req.query.limit ?? 10);
-    const replies = await postRepository.getRepliesForComment(
-        postId,
-        req.user.parentId,
-        commentId,
-        Number(limit),
-        cursorCreatedAt,
-        cursorId,
-    );
+        const cursorCreatedAt = req.query.cursorCreatedAt
+            ? new Date(req.query.cursorCreatedAt as string)
+            : null;
+        const cursorId = req.query.cursorId ? Number(req.query.cursorId) : null;
+        const limit = Number(req.query.limit ?? 10);
+        const replies = await postRepository.getRepliesForComment(
+            postId,
+            req.user.parentId,
+            commentId,
+            Number(limit),
+            cursorCreatedAt,
+            cursorId,
+        );
 
-    if (replies.length === 0){
-        new SuccessResponse('No replies for this comment', {
-            replies,
-            hasMore: false,
+        if (replies.length === 0) {
+            new SuccessResponse('No replies for this comment', {
+                replies,
+                hasMore: false,
+                nextCursor: {
+                    createdAt: null,
+                    id: null,
+                },
+            }).send(res);
+            return;
+        }
+
+        const hasMore = replies.length > limit;
+        if (hasMore) replies.pop();
+        const lastReply = replies[replies.length - 1];
+
+        new SuccessResponse('Replies retrieved', {
+            replies: replies.map((reply) => ({
+                ...reply,
+                id: Number(reply.id),
+                upvotes: reply.upvotes.toString(),
+                downvotes: reply.downvotes.toString(),
+                hasReplies: reply.hasReplies,
+            })),
             nextCursor: {
-                createdAt: null,
-                id: null,
+                id: lastReply?.id,
+                createdAt: lastReply?.createdAt,
             },
+            hasMore,
         }).send(res);
-        return;
-    }
-
-    const hasMore = replies.length > limit;
-    if (hasMore) replies.pop();
-    const lastReply = replies[replies.length - 1];
-
-    new SuccessResponse('Replies retrieved', {
-        replies: replies.map((reply) => ({
-            ...reply,
-            id: Number(reply.id),
-            upvotes: reply.upvotes.toString(),
-            downvotes: reply.downvotes.toString(),
-            hasReplies: reply.hasReplies,
-        })),
-        nextCursor: {
-            id: lastReply?.id,
-            createdAt: lastReply?.createdAt,
-        },
-        hasMore,
-    }).send(res);
-
-});
-
-const replyToComment = asyncHandler<ProtectedRequest>(async (req, res) => {
-    const postId = Number(req.params.postId);
-    const commentId = Number(req.params.commentId);
-    await verifyPostExist(postId);
-    const parentComment = await checkComment(commentId);
-
-    if (parentComment.postId !== postId)
-        throw new NotFoundError('Comment not found for this post.');
-
-    const createdReply = await postRepository.createComment(
-        req.user.parentId,
-        postId,
-        {
-            ...req.body as CommunityPostSchema['CreateComment'],
-            commentParentId: commentId,
-        },
-    );
-
-    new SuccessCreatedResponse('Reply Created.', createdReply).send(res);
-});
+    },
+);
 
 export default {
     createCommunityPost,
@@ -351,5 +333,4 @@ export default {
     voteOnComment,
     getCommentsForPost,
     getRepliesForComment,
-    replyToComment,
 };

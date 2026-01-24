@@ -149,7 +149,12 @@ const createComment = async (
         data: {
             postId,
             authorId,
-            ...commentData,
+            content: commentData.content,
+            ...(commentData.parentCommentId
+                ? {
+                      parentCommentId: commentData.parentCommentId,
+                  }
+                : {}),
         },
     });
 };
@@ -247,18 +252,18 @@ const voteOnComment = async (
 };
 
 const getCommentsForPost = async (
-  userId: number,
-  postId: number,
-  limit: number,
-  cursorCreatedAt: Date | null,
-  cursorId: number | null,
+    userId: number,
+    postId: number,
+    limit: number,
+    cursorCreatedAt: Date | null,
+    cursorId: number | null,
 ): Promise<CommentWithVotes[]> => {
-  return prisma.$queryRaw<CommentWithVotes[]>`
+    return prisma.$queryRaw<CommentWithVotes[]>`
     SELECT
       c.id,
       c.content,
       c.created_at AS "createdAt",
-
+      c.is_active AS "isActive",
       COUNT(v.id) FILTER (WHERE v.type = 'UPVOTE') AS upvotes,
       COUNT(v.id) FILTER (WHERE v.type = 'DOWNVOTE') AS downvotes,
 
@@ -282,7 +287,6 @@ const getCommentsForPost = async (
 
     WHERE
       c.post_id = ${postId}
-      AND c.is_active = true
       AND c.parent_comment_id IS NULL
       AND (
         ${cursorCreatedAt}::timestamp IS NULL
@@ -295,16 +299,15 @@ const getCommentsForPost = async (
   `;
 };
 
-
 const getRepliesForComment = async (
-  postId: number,
-  userId: number,
-  commentId: number,
-  limit: number,
-  cursorCreatedAt: Date | null,
-  cursorId: number | null,
+    postId: number,
+    userId: number,
+    commentId: number,
+    limit: number,
+    cursorCreatedAt: Date | null,
+    cursorId: number | null,
 ): Promise<CommentWithVotes[]> => {
-  return prisma.$queryRaw<CommentWithVotes[]>`
+    return prisma.$queryRaw<CommentWithVotes[]>`
     SELECT
       c.id,
       c.content,
@@ -345,7 +348,6 @@ const getRepliesForComment = async (
     LIMIT ${limit + 1};
   `;
 };
-
 
 export default {
     createNewPost,
