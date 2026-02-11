@@ -15,7 +15,7 @@ enum ResponseStatus {
 abstract class ApiResponse {
     constructor(
         protected status: ResponseStatus,
-        protected message: string,
+        protected message?: string,
     ) {}
 
     protected prepare<T extends ApiResponse>(
@@ -129,5 +129,24 @@ export class TokenRefreshResponse extends ApiResponse {
 
     send(res: Response, headers: { [key: string]: string } = {}): Response {
         return super.prepare<TokenRefreshResponse>(res, this, headers);
+    }
+}
+
+export class SuccessCreatedResponse<T> extends ApiResponse {
+    constructor(
+        message: string,
+        private data: T,
+    ) {
+        super(ResponseStatus.CREATED, message);
+    }
+
+    send(res: Response, headers: { [key: string]: string } = {}): Response {
+        return super.prepare<SuccessCreatedResponse<T>>(res, this, headers);
+    }
+}
+
+export class SuccessDeletionResponse extends ApiResponse {
+    constructor() {
+        super(ResponseStatus.NO_CONTENT);
     }
 }

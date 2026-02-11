@@ -53,218 +53,198 @@ enum ParentChildRelations {
   OTHERS
 }
 
-// PARENT
-model Parent {
-  id                          Int                 @id @default(autoincrement())
-  name                        String
-  phoneNumber                 String              @unique @map("phone_number")
-  email                       String              @unique
-  preferredLanguage           SupportedLanguage?  @default(ENGLISH)
-  location                    String
-  knownAutismHistory          String?
-  preferredCommunicationStyle CommunicationStyle? @default(SIMPLE)
-
-  hashedPassword String
-  emailVerified  Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  forumPosts           ForumPost[]
-  comments             Comment[]
-  votes                Vote[]
-  children             Child[]
-  refreshTokens        RefreshToken[]
-  autismBehaviourForms AutismBehaviourForm[]
-
-  @@index([email])
-}
-
-// CHILD
-model Child {
-  id                 Int                     @id @default(autoincrement())
-  name               String
-  dob                DateTime
-  gender             Gender
-  knownDiagnosis     DiagnosisTypes?
-  diagnosisStage     DiagnosisStages?
-  developmentalStage ChildDevelopmentStages?
-  dominantHand       String?
-
-  parentId           Int
-  relationWithParent ParentChildRelations?
-
-  needsVector Float[] @default([])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  parent               Parent                @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  autismBehaviourForms AutismBehaviourForm[]
-
-  @@index([parentId])
-}
-
-// REFRESH TOKEN
-model RefreshToken {
-  id        Int    @id @default(autoincrement())
-  tokenHash String
-  parentId  Int    @map("parent_id")
-  parent    Parent @relation(fields: [parentId], references: [id], onDelete: Cascade)
-
-  ip        String?
-  userAgent String?
-
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-
-  @@index([parentId])
-  @@index([expiresAt])
-}
-
-model AutismCategory {
-  id        Int      @id @default(autoincrement())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  questions       AutismBehaviourQuestionnaire[]
-  categoryOutputs AutismCategoryOutput[]
-}
-
-model AutismBehaviourQuestionnaire {
-  id         Int            @id @default(autoincrement())
-  question   String
-  categoryId Int
-  category   AutismCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  weight     Int
-  order      Int
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-
-  questionResponses AutismBehaviourQuestionResponse[]
-}
-
-model AutismBehaviourForm {
-  id        Int      @id @default(autoincrement())
-  parentId  Int
-  childId   Int
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  parent Parent @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  child  Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
-
-  questionResponses AutismBehaviourQuestionResponse[]
-  categoryOutputs   AutismCategoryOutput[]
-
-  @@index([parentId])
-  @@index([childId])
-}
-
-model AutismBehaviourQuestionResponse {
-  id             Int      @id @default(autoincrement())
-  questionId     Int      @map("question_id")
-  parentResponse Int      @map("parent_response")
-  formId         Int      @map("form_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  form     AutismBehaviourForm          @relation(fields: [formId], references: [id], onDelete: Cascade)
-  question AutismBehaviourQuestionnaire @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  @@unique([formId, questionId])
-  @@index([formId])
-  @@index([questionId])
-}
-
-model AutismCategoryOutput {
-  id Int @id @default(autoincrement())
-
-  formId     Int
-  categoryId Int
-
-  totalScore       Int
-  maxPossibleScore Int
-  normalizedScore  Float
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  form     AutismBehaviourForm @relation(fields: [formId], references: [id], onDelete: Cascade)
-  category AutismCategory      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@unique([formId, categoryId])
-  @@index([categoryId])
-}
-
-// Forum related tables
 enum VoteType {
   UPVOTE
   DOWNVOTE
 }
 
-model ForumPost {
-  id      Int    @id @default(autoincrement())
-  title   String
-  content String
+// PARENT
+model Parent {
+  id                          Int                   @id @default(autoincrement())
+  name                        String
+  phoneNumber                 String                @unique @map("phone_number")
+  email                       String                @unique
+  preferredLanguage           SupportedLanguage?    @default(ENGLISH) @map("preferred_language")
+  location                    String
+  knownAutismHistory          String?               @map("known_autism_history")
+  preferredCommunicationStyle CommunicationStyle?   @default(SIMPLE) @map("preferred_communication_style")
+  hashedPassword              String                @map("hashed_password")
+  emailVerified               Boolean               @default(false) @map("email_verified")
+  createdAt                   DateTime              @default(now()) @map("created_at")
+  updatedAt                   DateTime              @updatedAt @map("updated_at")
+  forumPosts                  CommunityPost[]
+  comments                    PostComment[]
+  votes                       Vote[]
+  children                    Child[]
+  refreshTokens               RefreshToken[]
+  autismBehaviourForms        AutismBehaviourForm[]
 
-  authorId Int
-  author   Parent @relation(fields: [authorId], references: [id])
-
-  comments Comment[]
-  votes    Vote[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([authorId])
+  @@index([email])
+  @@map("parents")
 }
 
-model Comment {
-  id      Int    @id @default(autoincrement())
-  content String
+// CHILD
+model Child {
+  id                   Int                     @id @default(autoincrement())
+  name                 String
+  dob                  DateTime
+  gender               Gender
+  knownDiagnosis       DiagnosisTypes?         @map("known_diagnosis")
+  diagnosisStage       DiagnosisStages?        @map("diagnosis_stage")
+  developmentalStage   ChildDevelopmentStages? @map("developmental_stage")
+  dominantHand         String?                 @map("dominant_hand")
+  parentId             Int                     @map("parent_id")
+  relationWithParent   ParentChildRelations?   @map("relation_with_parent")
+  needsVector          Float[]                 @default([]) @map("needs_vector")
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @updatedAt @map("updated_at")
+  parent               Parent                  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  autismBehaviourForms AutismBehaviourForm[]
 
-  authorId Int
-  author   Parent @relation(fields: [authorId], references: [id])
+  @@index([parentId])
+  @@map("children")
+}
 
-  postId Int
-  post   ForumPost @relation(fields: [postId], references: [id])
+// REFRESH TOKEN
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @map("token_hash")
+  parentId  Int      @map("parent_id")
+  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
 
-  // parentCommentId is the parent of the replied comment
-  // Comment-A (id=1, parentCommentId=null)
-  //      |- Comment-B (id=2, parentCommentId=1)
-  //          |- Comment-C (id=5, parentCommentId=2)
-  //      |- Comment-C (id=10, parentCommentId=1)
+  @@index([parentId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
 
-  parentCommentId Int?
-  parent          Comment?  @relation("NestedComments", fields: [parentCommentId], references: [id])
-  replies         Comment[] @relation("NestedComments")
+model AutismCategory {
+  id              Int                            @id @default(autoincrement())
+  name            String
+  createdAt       DateTime                       @default(now()) @map("created_at")
+  updatedAt       DateTime                       @updatedAt @map("updated_at")
+  questions       AutismBehaviourQuestionnaire[]
+  categoryOutputs AutismCategoryOutput[]
 
-  votes Vote[]
+  @@map("autism_categories")
+}
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model AutismBehaviourQuestionnaire {
+  id                Int                               @id @default(autoincrement())
+  question          String
+  categoryId        Int                               @map("category_id")
+  category          AutismCategory                    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  weight            Int
+  order             Int
+  createdAt         DateTime                          @default(now()) @map("created_at")
+  updatedAt         DateTime                          @updatedAt @map("updated_at")
+  questionResponses AutismBehaviourQuestionResponse[]
+
+  @@map("autism_behaviour_questionnaires")
+}
+
+model AutismBehaviourForm {
+  id                Int                               @id @default(autoincrement())
+  parentId          Int                               @map("parent_id")
+  childId           Int                               @map("child_id")
+  createdAt         DateTime                          @default(now()) @map("created_at")
+  updatedAt         DateTime                          @updatedAt @map("updated_at")
+  parent            Parent                            @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  child             Child                             @relation(fields: [childId], references: [id], onDelete: Cascade)
+  questionResponses AutismBehaviourQuestionResponse[]
+  categoryOutputs   AutismCategoryOutput[]
+
+  @@index([parentId])
+  @@index([childId])
+  @@map("autism_behaviour_forms")
+}
+
+model AutismBehaviourQuestionResponse {
+  id             Int                          @id @default(autoincrement())
+  questionId     Int                          @map("question_id")
+  parentResponse Int                          @map("parent_response")
+  formId         Int                          @map("form_id")
+  createdAt      DateTime                     @default(now()) @map("created_at")
+  updatedAt      DateTime                     @updatedAt @map("updated_at")
+  form           AutismBehaviourForm          @relation(fields: [formId], references: [id], onDelete: Cascade)
+  question       AutismBehaviourQuestionnaire @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([formId, questionId])
+  @@index([formId])
+  @@index([questionId])
+  @@map("autism_behaviour_question_responses")
+}
+
+model AutismCategoryOutput {
+  id               Int                 @id @default(autoincrement())
+  formId           Int                 @map("form_id")
+  categoryId       Int                 @map("category_id")
+  totalScore       Int                 @map("total_score")
+  maxPossibleScore Int                 @map("max_possible_score")
+  normalizedScore  Float               @map("normalized_score")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+  form             AutismBehaviourForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  category         AutismCategory      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([formId, categoryId])
+  @@index([categoryId])
+  @@map("autism_category_outputs")
+}
+
+model CommunityPost {
+  id        Int           @id @default(autoincrement())
+  title     String
+  content   String
+  authorId  Int           @map("author_id")
+  isActive  Boolean       @map("is_active") @default(true)
+  author    Parent        @relation(fields: [authorId], references: [id])
+  comments  PostComment[]
+  votes     Vote[]
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@index([authorId])
+  @@index([id, createdAt])
+  
+  @@map("community_posts")
+}
+
+model PostComment {
+  id              Int           @id @default(autoincrement())
+  content         String
+  authorId        Int           @map("author_id")
+  author          Parent        @relation(fields: [authorId], references: [id])
+  postId          Int           @map("post_id")
+  post            CommunityPost @relation(fields: [postId], references: [id])
+  parentCommentId Int?          @map("parent_comment_id")
+  isActive        Boolean       @default(true) @map("is_active")
+  parent          PostComment?  @relation("NestedComments", fields: [parentCommentId], references: [id])
+  replies         PostComment[] @relation("NestedComments")
+  votes           Vote[]
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
   @@index([postId])
   @@index([parentCommentId])
+  @@map("post_comments")
 }
 
 model Vote {
-  id   Int      @id @default(autoincrement())
-  type VoteType
-
-  parentId Int
-  parent   Parent @relation(fields: [parentId], references: [id])
-
-  postId Int?
-  post   ForumPost? @relation(fields: [postId], references: [id])
-
-  commentId Int?
-  comment   Comment? @relation(fields: [commentId], references: [id])
-
-  createdAt DateTime @default(now())
+  id        Int            @id @default(autoincrement())
+  type      VoteType
+  parentId  Int            @map("parent_id")
+  parent    Parent         @relation(fields: [parentId], references: [id])
+  postId    Int?           @map("post_id")
+  post      CommunityPost? @relation(fields: [postId], references: [id])
+  commentId Int?           @map("comment_id")
+  comment   PostComment?   @relation(fields: [commentId], references: [id])
+  createdAt DateTime       @default(now()) @map("created_at")
 
   @@unique([parentId, postId])
   @@unique([parentId, commentId])
+  @@map("votes")
 }
