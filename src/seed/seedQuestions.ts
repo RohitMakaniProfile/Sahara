@@ -7,6 +7,7 @@ type Q = {
     categoryName: string;
     weight: number;
     order: number;
+    tags: string[];
 };
 
 const questions: Q[] = [
@@ -16,18 +17,21 @@ const questions: Q[] = [
         categoryName: 'Social Interaction',
         weight: 3,
         order: 1,
+        tags: ['social_engagement', 'greetings'],
     },
     {
         question: 'Enjoys playing with other children?',
         categoryName: 'Social Interaction',
         weight: 3,
         order: 2,
+        tags: ['social_play', 'turn_taking'],
     },
     {
         question: "Understands other people's feelings?",
         categoryName: 'Social Interaction',
         weight: 3,
         order: 3,
+        tags: ['empathy', 'emotional_recognition'],
     },
 
     // Speech & Communication
@@ -36,18 +40,21 @@ const questions: Q[] = [
         categoryName: 'Communication',
         weight: 3,
         order: 1,
+        tags: ['verbal_fluency', 'communication_gaps'],
     },
     {
         question: 'Repeats words or phrases?',
         categoryName: 'Communication',
         weight: 2,
         order: 2,
+        tags: ['echolalia', 'communication_flexibility'],
     },
     {
         question: 'Difficulty answering questions?',
         categoryName: 'Communication',
         weight: 3,
         order: 3,
+        tags: ['communication_gaps', 'problem_solving'],
     },
 
     // Play Skills
@@ -56,12 +63,14 @@ const questions: Q[] = [
         categoryName: 'Play Skills',
         weight: 2,
         order: 1,
+        tags: ['imagination', 'cognitive_play'],
     },
     {
         question: 'Prefers to play alone?',
         categoryName: 'Play Skills',
         weight: 2,
         order: 2,
+        tags: ['social_isolation', 'joint_attention'],
     },
 
     // Repetitive Behaviors
@@ -70,12 +79,14 @@ const questions: Q[] = [
         categoryName: 'Repetitive Behaviors',
         weight: 3,
         order: 1,
+        tags: ['stimming', 'body_awareness', 'energy_release'],
     },
     {
         question: 'Gets upset by changes in routine?',
         categoryName: 'Repetitive Behaviors',
         weight: 3,
         order: 2,
+        tags: ['frustration_tolerance', 'flexibility'],
     },
 
     // Sensory Processing
@@ -84,12 +95,14 @@ const questions: Q[] = [
         categoryName: 'Sensory Processing',
         weight: 3,
         order: 1,
+        tags: ['tactile_processing', 'auditory_processing', 'calming_strategies'],
     },
     {
         question: 'Seeks certain sensations?',
         categoryName: 'Sensory Processing',
         weight: 2,
         order: 2,
+        tags: ['sensory_seeking', 'proprioception', 'heavy_work'],
     },
 
     // Emotional Regulation
@@ -98,12 +111,14 @@ const questions: Q[] = [
         categoryName: 'Emotional Regulation',
         weight: 3,
         order: 1,
+        tags: ['calming_strategies', 'frustration_tolerance', 'emotional_regulation'],
     },
     {
         question: 'Trouble calming down once upset?',
         categoryName: 'Emotional Regulation',
         weight: 3,
         order: 2,
+        tags: ['calming_strategies', 'self_soothing'],
     },
 
     // Motor Skills
@@ -112,12 +127,14 @@ const questions: Q[] = [
         categoryName: 'Motor Skills',
         weight: 2,
         order: 1,
+        tags: ['grip_strength', 'finger_control', 'hand_eye_coordination', 'pre_writing'],
     },
     {
         question: 'Walks on tiptoes often?',
         categoryName: 'Motor Skills',
         weight: 2,
         order: 2,
+        tags: ['toe_walking', 'walking_control', 'balance', 'gross_motor'],
     },
 
     // Cognitive Style
@@ -126,12 +143,14 @@ const questions: Q[] = [
         categoryName: 'Cognitive Style',
         weight: 2,
         order: 1,
+        tags: ['problem_solving', 'cognitive_flexibility'],
     },
     {
         question: 'Takes things literally?',
         categoryName: 'Cognitive Style',
         weight: 2,
         order: 2,
+        tags: ['abstract_thinking', 'pragmatics'],
     },
 
     // Attention & Executive Function
@@ -140,12 +159,14 @@ const questions: Q[] = [
         categoryName: 'Attention & Executive Function',
         weight: 3,
         order: 1,
+        tags: ['attention_concentration', 'task_completion'],
     },
     {
         question: 'Easily distracted?',
         categoryName: 'Attention & Executive Function',
         weight: 3,
         order: 2,
+        tags: ['attention_concentration', 'focus'],
     },
 
     // Behavior & Self-Control
@@ -154,12 +175,14 @@ const questions: Q[] = [
         categoryName: 'Behavior & Self-Control',
         weight: 3,
         order: 1,
+        tags: ['impulse_control', 'waiting', 'command_following'],
     },
     {
         question: 'Shows aggression when upset?',
         categoryName: 'Behavior & Self-Control',
         weight: 3,
         order: 2,
+        tags: ['emotional_regulation', 'calming_strategies'],
     },
 
     // Daily Living & Self-Care
@@ -168,40 +191,14 @@ const questions: Q[] = [
         categoryName: 'Daily Living & Self-Care',
         weight: 2,
         order: 1,
+        tags: ['toileting', 'body_awareness'],
     },
     {
         question: 'Resists bathing, brushing teeth, or dressing?',
         categoryName: 'Daily Living & Self-Care',
         weight: 3,
         order: 2,
-    },
-
-    // Learning & Attention (new)
-    {
-        question: 'Has difficulty following multi-step instructions?',
-        categoryName: 'Learning & Attention',
-        weight: 3,
-        order: 1,
-    },
-    {
-        question: 'Needs frequent reminders to stay on task?',
-        categoryName: 'Learning & Attention',
-        weight: 2,
-        order: 2,
-    },
-
-    // Behavioral Patterns (new)
-    {
-        question: 'Insists on doing things a specific way?',
-        categoryName: 'Behavioral Patterns',
-        weight: 3,
-        order: 1,
-    },
-    {
-        question: 'Gets fixated on specific interests or activities?',
-        categoryName: 'Behavioral Patterns',
-        weight: 2,
-        order: 2,
+        tags: ['tactile_processing', 'oral_sensory_input', 'self_care'],
     },
 ];
 
@@ -212,6 +209,13 @@ async function main() {
     const categoryNames = Array.from(
         new Set(questions.map((q) => q.categoryName)),
     );
+
+    // Ensure required categories exist (safe to re-run)
+    await prisma.autismCategory.createMany({
+        data: categoryNames.map((name) => ({ name })),
+        skipDuplicates: true,
+    });
+
     const categories = await prisma.autismCategory.findMany({
         where: { name: { in: categoryNames } },
     });
@@ -234,6 +238,7 @@ async function main() {
         categoryId: catByName.get(q.categoryName)!,
         weight: q.weight,
         order: q.order,
+        tags: q.tags,
     }));
 
     // use createMany with skipDuplicates if desired

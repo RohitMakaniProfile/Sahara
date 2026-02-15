@@ -26,6 +26,8 @@ const createCommunityPost = asyncHandler<ProtectedRequest>(async (req, res) => {
     const title = req.body.title;
     const content = req.body.content;
 
+    
+
     const post = await postRepository.createNewPost(title, content, parentId);
 
     new SuccessCreatedResponse('Forum post created', post).send(res);
