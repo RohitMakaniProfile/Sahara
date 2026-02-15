@@ -94,10 +94,26 @@ const saveCategoryOutputs = async (
     });
 };
 
+// Get the latest AutismBehaviourForm for a given childId
+const getLatestFormByChildId = async (childId: number) => {
+    return await prisma.autismBehaviourForm.findFirst({
+        where: { childId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+            questionResponses: {
+                include: {
+                    question: true,
+                },
+            },
+        },
+    });
+};
+
 export default {
     getFormStructure,
     isChildBelongsToParent,
     allValidQuestionsData,
     createFormSubmission,
     saveCategoryOutputs,
+    getLatestFormByChildId,
 };

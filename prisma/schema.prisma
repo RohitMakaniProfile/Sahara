@@ -195,6 +195,24 @@ model Vote {
   @@map("votes")
 }
 
+
+model Activity {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  tags        String[] @default([])
+  videoUrl    String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("activities")
+}
+
+
+
+
+
 enum SupportedLanguage {
   ENGLISH
   HINDI
