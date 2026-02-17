@@ -38,11 +38,12 @@ app.use(
 app.use(helmet());
 
 // Health check route
-router.get('/health', (_req, res) => {
+app.get('/health', (_req, res) => {
     new SuccessMsgResponse(
         'Sahara Backend application is healthy and running.',
     ).send(res);
 });
+
 // Main routes
 app.use('/api', router);
 
