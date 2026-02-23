@@ -11,6 +11,24 @@ const create = async (data: Prisma.ParentCreateInput) => {
 const findByEmail = async (email: string) => {
     return prisma.parent.findUnique({ where: { email } });
 };
+
+const findProfileById = async (parentId: number) => {
+    return prisma.parent.findUnique({
+        where: { id: parentId },
+        select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+            email: true,
+            location: true,
+            preferredLanguage: true,
+            knownAutismHistory: true,
+            preferredCommunicationStyle: true,
+            createdAt: true,
+            updatedAt: true,
+        },
+    });
+};
 interface createWithTokenReturn {
     parent: Parent;
     refreshTokenPlain: string;
@@ -46,5 +64,6 @@ const createWithToken = async (
 export default {
     create,
     findByEmail,
+    findProfileById,
     createWithToken,
 };

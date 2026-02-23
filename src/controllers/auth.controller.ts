@@ -4,12 +4,13 @@ import parentRepository from '../db/repository/parent.repository.js';
 import refreshRepository from '../db/repository/refreshToken.repository.js';
 import { PasswordUtils } from '../core/password.js';
 import jwtUtil from '../core/token.js';
-import { BadRequestError } from '../core/ApiError.js';
+import { BadRequestError, NotFoundError } from '../core/ApiError.js';
 import { SuccessMsgResponse, SuccessResponse } from '../core/ApiResponse.js';
 import type { RefreshToken } from '@prisma/client';
 import { sendRefreshCookie } from '../services/auth.services.js';
 import { refreshTokenTtlMs } from '../config.js';
 import { configCookies } from '../helpers/cookie-options.js';
+import type { ProtectedRequest } from '../types/app-requests.js';
 
 // TODO: Add some headers to detect the device of the client request(Web/Mobile)
 
@@ -175,7 +176,7 @@ const logout = asyncHandler(async (req: Request, res: Response) => {
     );
 
     for (const t of savedTokens) {
-        const ok = await PasswordUtils.compare(tokenFromCookie, t.tokenHash);
+        const ok = await PasswordUtils.compare(refreshToken, t.tokenHash);
         if (ok) {
             await refreshRepository.deleteById(t.id);
             break;
@@ -191,9 +192,18 @@ const logout = asyncHandler(async (req: Request, res: Response) => {
     new SuccessMsgResponse('Logged out').send(res);
 });
 
+const me = asyncHandler<ProtectedRequest>(async (req, res) => {
+    const parentId = req.user.parentId;
+    const parent = await parentRepository.findProfileById(parentId);
+    if (!parent) throw new NotFoundError('Parent not found');
+
+    new SuccessResponse('Me retrieved', { parent }).send(res);
+});
+
 export default {
     register,
     login,
     refresh,
     logout,
+    me,
 };

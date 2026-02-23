@@ -1,4 +1,10 @@
-import { Gender, ParentChildRelations } from '@prisma/client';
+import {
+    ChildDevelopmentStages,
+    DiagnosisStages,
+    DiagnosisTypes,
+    Gender,
+    ParentChildRelations,
+} from '@prisma/client';
 import z from 'zod';
 
 const ParentRegister = z.object({
@@ -31,6 +37,10 @@ const ChildRegister = z.object({
     dob: dobSchema,
     gender: z.enum(Gender, 'Gender must be one of: male, female, other'),
     relationWithParent: z.enum(ParentChildRelations),
+    knownDiagnosis: z.enum(DiagnosisTypes).optional().nullable(),
+    diagnosisStage: z.enum(DiagnosisStages).optional().nullable(),
+    developmentalStage: z.enum(ChildDevelopmentStages).optional().nullable(),
+    dominantHand: z.string().min(1).max(50).optional().nullable(),
 });
 
 export default {

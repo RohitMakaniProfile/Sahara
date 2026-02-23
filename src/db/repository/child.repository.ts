@@ -44,8 +44,23 @@ const latestFormResults = async (childId: number, parentId: number) => {
     return result;
 };
 
+const findById = async (childId: number) => {
+    return prisma.child.findUnique({
+        where: { id: childId },
+    });
+};
+
+const updateById = async (childId: number, data: Prisma.ChildUpdateInput) => {
+    return prisma.child.update({
+        where: { id: childId },
+        data,
+    });
+};
+
 export default {
     create,
     findParent,
     latestFormResults,
+    findById,
+    updateById,
 };

@@ -5,10 +5,12 @@ import formRouter from './form.routes.js';
 import communityPostsRouter from './communityPost.routes.js';
 import activityRouter from './activity.routes.js';
 import routineRouter from './routine.routes.js';
+import parentRouter from './parent.routes.js';
 
 const router = express.Router();
 
 router.use('/auth', authRouter);
+router.use('/parent', parentRouter);
 router.use('/child', childRouter);
 router.use('/form', formRouter);
 router.use('/posts', communityPostsRouter);

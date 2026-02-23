@@ -5,15 +5,25 @@ import childRepository from '../db/repository/child.repository.js';
 import { SuccessResponse } from '../core/ApiResponse.js';
 import { BadRequestError } from '../core/ApiError.js';
 import childServices from '../services/child.services.js';
+import type { ChildSchema } from '../schema/child.schema.js';
 
 
 const childRegister = asyncHandler<ProtectedRequest>(
     async (req: ProtectedRequest, res: Response) => {
         const parentId = req.user.parentId;
 
-        const { name, dob, gender, relationWithParent } = req.body;
+        const {
+            name,
+            dob,
+            gender,
+            relationWithParent,
+            knownDiagnosis,
+            diagnosisStage,
+            developmentalStage,
+            dominantHand,
+        } = req.body;
 
-        const parsedDob = new Date(dob);
+        const parsedDob = dob instanceof Date ? dob : new Date(dob);
         const age = childServices.calculateAge(parsedDob);
 
         const child = await childRepository.create({
@@ -21,6 +31,10 @@ const childRegister = asyncHandler<ProtectedRequest>(
             dob: parsedDob,
             gender,
             relationWithParent,
+            ...(knownDiagnosis !== undefined ? { knownDiagnosis } : {}),
+            ...(diagnosisStage !== undefined ? { diagnosisStage } : {}),
+            ...(developmentalStage !== undefined ? { developmentalStage } : {}),
+            ...(dominantHand !== undefined ? { dominantHand } : {}),
             parentId,
         });
 
@@ -77,7 +91,97 @@ const getChildLatestFormResults = asyncHandler<ProtectedRequest>(
     },
 );
 
+const getChildProfile = asyncHandler<ProtectedRequest>(
+    async (req: ProtectedRequest, res: Response) => {
+        const parentId = req.user?.parentId;
+        const childId = Number(req.params?.childId);
+        if (Number.isNaN(childId)) throw new BadRequestError('Invalid childId');
+
+        const child = await childRepository.findById(childId);
+        if (!child) throw new BadRequestError('Child not found');
+        if (child.parentId !== parentId) {
+            throw new BadRequestError('Child does not belong to the parent');
+        }
+
+        const age = childServices.calculateAge(child.dob);
+
+        new SuccessResponse('Child retrieved', {
+            child: {
+                id: child.id,
+                name: child.name,
+                dob: child.dob,
+                age,
+                gender: child.gender,
+                relationWithParent: child.relationWithParent,
+                knownDiagnosis: child.knownDiagnosis,
+                diagnosisStage: child.diagnosisStage,
+                developmentalStage: child.developmentalStage,
+                dominantHand: child.dominantHand,
+                parentId: child.parentId,
+                createdAt: child.createdAt,
+                updatedAt: child.updatedAt,
+            },
+        }).send(res);
+    },
+);
+
+const updateChildProfile = asyncHandler<ProtectedRequest>(
+    async (req: ProtectedRequest, res: Response) => {
+        const parentId = req.user.parentId;
+        const childId = Number(req.params.childId);
+        if (Number.isNaN(childId)) throw new BadRequestError('Invalid childId');
+
+        const existing = await childRepository.findById(childId);
+        if (!existing) throw new BadRequestError('Child not found');
+        if (existing.parentId !== parentId) {
+            throw new BadRequestError('Child does not belong to the parent');
+        }
+
+        const body = req.body as ChildSchema['ChildUpdate'];
+
+        const updated = await childRepository.updateById(childId, {
+            ...(body.name !== undefined ? { name: body.name } : {}),
+            ...(body.dob !== undefined ? { dob: body.dob } : {}),
+            ...(body.gender !== undefined ? { gender: body.gender } : {}),
+            ...(body.relationWithParent !== undefined
+                ? { relationWithParent: body.relationWithParent }
+                : {}),
+            ...(body.knownDiagnosis !== undefined
+                ? { knownDiagnosis: body.knownDiagnosis }
+                : {}),
+            ...(body.diagnosisStage !== undefined
+                ? { diagnosisStage: body.diagnosisStage }
+                : {}),
+            ...(body.developmentalStage !== undefined
+                ? { developmentalStage: body.developmentalStage }
+                : {}),
+            ...(body.dominantHand !== undefined
+                ? { dominantHand: body.dominantHand }
+                : {}),
+        });
+
+        const age = childServices.calculateAge(updated.dob);
+
+        new SuccessResponse('Child updated', {
+            child: {
+                id: updated.id,
+                name: updated.name,
+                dob: updated.dob,
+                age,
+                gender: updated.gender,
+                relationWithParent: updated.relationWithParent,
+                knownDiagnosis: updated.knownDiagnosis,
+                diagnosisStage: updated.diagnosisStage,
+                developmentalStage: updated.developmentalStage,
+                dominantHand: updated.dominantHand,
+            },
+        }).send(res);
+    },
+);
+
 export default {
     childRegister,
     getChildLatestFormResults,
+    getChildProfile,
+    updateChildProfile,
 };
