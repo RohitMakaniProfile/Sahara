@@ -28,7 +28,6 @@ const ParentLogin = ParentRegister.pick({ email: true, password: true });
 
 const ChildRegister = z.object({
     name: z.string().min(1, 'Name is required'),
-    age: z.number().min(0, 'Age must be a positive number'),
     dob: dobSchema,
     gender: z.enum(Gender, 'Gender must be one of: male, female, other'),
     relationWithParent: z.enum(ParentChildRelations),

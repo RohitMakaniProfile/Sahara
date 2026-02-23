@@ -10,7 +10,7 @@ const router = Router();
 router.use(protect);
 
 router.post(
-    '/',
+    '/register',
     validator(authSchema.ChildRegister, ValidationSource.BODY),
     childController.childRegister,
 );

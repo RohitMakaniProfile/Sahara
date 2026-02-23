@@ -4,6 +4,8 @@ import type { ProtectedRequest } from '../types/app-requests.js';
 import childRepository from '../db/repository/child.repository.js';
 import { SuccessResponse } from '../core/ApiResponse.js';
 import { BadRequestError } from '../core/ApiError.js';
+import childServices from '../services/child.services.js';
+
 
 const childRegister = asyncHandler<ProtectedRequest>(
     async (req: ProtectedRequest, res: Response) => {
@@ -12,6 +14,7 @@ const childRegister = asyncHandler<ProtectedRequest>(
         const { name, dob, gender, relationWithParent } = req.body;
 
         const parsedDob = new Date(dob);
+        const age = childServices.calculateAge(parsedDob);
 
         const child = await childRepository.create({
             name,
@@ -22,7 +25,7 @@ const childRegister = asyncHandler<ProtectedRequest>(
         });
 
         new SuccessResponse('Child Registered', {
-            child: { id: child.id, name: child.name, dob: child.dob },
+            child: { id: child.id, name: child.name, dob: child.dob ,age},
         }).send(res);
     },
 );
