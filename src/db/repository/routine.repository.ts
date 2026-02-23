@@ -1,5 +1,5 @@
 import { prisma } from '../prisma.js';
-import type { DayOfWeek, RoutineCheckStatus } from '@prisma/client';
+import type { DayOfWeek, Prisma, RoutineCheckStatus } from '@prisma/client';
 
 type WeekInput = Record<
     DayOfWeek,
@@ -7,9 +7,9 @@ type WeekInput = Record<
         startMinute: number;
         endMinute: number;
         title: string;
-        notes?: string;
-        order?: number;
-        activityId?: number;
+        notes?: string | undefined;
+        order?: number | undefined;
+        activityId?: number | undefined;
     }[]
 >;
 
@@ -302,6 +302,12 @@ async function getDayItemsWithCheckIns(params: {
     childId: number;
     date: string;
 }) {
+    type CheckInLite = { itemId: number; status: RoutineCheckStatus; note: string | null };
+    type RoutineItem = Awaited<ReturnType<typeof prisma.childRoutineItem.findMany>>[number];
+    type DayItem = RoutineItem & {
+        checkIn: CheckInLite | null;
+    };
+
     const dateKey = parseDateKey(params.date);
     const dayOfWeek = dayOfWeekFromDateKey(dateKey);
 
@@ -312,7 +318,7 @@ async function getDayItemsWithCheckIns(params: {
     });
 
     if (!routine) {
-        return { routine: null, dateKey, dayOfWeek, items: [] as any[] };
+        return { routine: null, dateKey, dayOfWeek, items: [] as DayItem[] };
     }
 
     const items = await prisma.childRoutineItem.findMany({
@@ -410,12 +416,17 @@ async function listCheckIns(params: {
     if (!child) return null;
     if (child.parentId !== params.parentId) return 'FORBIDDEN' as const;
 
-    const where: any = { childId: params.childId };
-    if (params.from || params.to) {
-        where.date = {};
-        if (params.from) where.date.gte = parseDateKey(params.from);
-        if (params.to) where.date.lte = parseDateKey(params.to);
-    }
+    const where: Prisma.RoutineCheckInWhereInput = {
+        childId: params.childId,
+        ...(params.from || params.to
+            ? {
+                  date: {
+                      ...(params.from ? { gte: parseDateKey(params.from) } : {}),
+                      ...(params.to ? { lte: parseDateKey(params.to) } : {}),
+                  },
+              }
+            : {}),
+    };
 
     return prisma.routineCheckIn.findMany({
         where,

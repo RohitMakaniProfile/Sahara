@@ -1,4 +1,4 @@
-import type { DayOfWeek } from '@prisma/client';
+import type { ChildRoutineItem, DayOfWeek } from '@prisma/client';
 import { asyncHandler } from '../core/asyncHandler.js';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../core/ApiError.js';
 import { SuccessCreatedResponse, SuccessResponse } from '../core/ApiResponse.js';
@@ -6,7 +6,7 @@ import routineRepository from '../db/repository/routine.repository.js';
 import type { ProtectedRequest } from '../types/app-requests.js';
 import type { RoutineSchema } from '../schema/routine.schema.js';
 
-function emptyWeek() {
+function emptyWeek<T = never>() {
     return {
         MON: [],
         TUE: [],
@@ -15,7 +15,7 @@ function emptyWeek() {
         FRI: [],
         SAT: [],
         SUN: [],
-    } as Record<DayOfWeek, any[]>;
+    } as Record<DayOfWeek, T[]>;
 }
 
 async function assertChildOwnership(parentId: number, childId: number) {
@@ -24,7 +24,7 @@ async function assertChildOwnership(parentId: number, childId: number) {
     if (child.parentId !== parentId) throw new ForbiddenError('Not allowed');
 }
 
-function serializeItem(i: any) {
+function serializeItem(i: ChildRoutineItem) {
     return {
         id: i.id,
         routineId: i.routineId,
@@ -39,6 +39,16 @@ function serializeItem(i: any) {
     };
 }
 
+type RoutineWeekInputItem = {
+    startMinute: number;
+    endMinute: number;
+    title: string;
+    notes?: string | undefined;
+    order: number;
+    activityId?: number | undefined;
+};
+type RoutineWeekInput = Record<DayOfWeek, RoutineWeekInputItem[]>;
+
 const getRoutine = asyncHandler<ProtectedRequest>(async (req, res) => {
     const parentId = req.user.parentId;
     const childId = Number(req.params.childId);
@@ -48,12 +58,12 @@ const getRoutine = asyncHandler<ProtectedRequest>(async (req, res) => {
     if (!routine) {
         new SuccessResponse('No routine found', {
             routine: null,
-            week: emptyWeek(),
+            week: emptyWeek<ReturnType<typeof serializeItem>>(),
         }).send(res);
         return;
     }
 
-    const week = emptyWeek();
+    const week = emptyWeek<ReturnType<typeof serializeItem>>();
     for (const item of routine.items) {
         week[item.dayOfWeek].push(serializeItem(item));
     }
@@ -85,7 +95,7 @@ const putRoutine = asyncHandler<ProtectedRequest>(async (req, res) => {
         ...(body.name ? { name: body.name } : {}),
     });
 
-    const weekInput = {
+    const weekInput: RoutineWeekInput = {
         MON: body.week.MON,
         TUE: body.week.TUE,
         WED: body.week.WED,
@@ -93,7 +103,7 @@ const putRoutine = asyncHandler<ProtectedRequest>(async (req, res) => {
         FRI: body.week.FRI,
         SAT: body.week.SAT,
         SUN: body.week.SUN,
-    } as any;
+    };
 
     const result = await routineRepository.replaceRoutineWeek({
         routineId: routine.id,
@@ -107,7 +117,7 @@ const putRoutine = asyncHandler<ProtectedRequest>(async (req, res) => {
     if (!result.ok) throw new BadRequestError(result.reason);
 
     const updated = await routineRepository.getRoutineWithItems(parentId, childId);
-    const week = emptyWeek();
+    const week = emptyWeek<ReturnType<typeof serializeItem>>();
     for (const item of updated?.items ?? []) {
         week[item.dayOfWeek].push(serializeItem(item));
     }
@@ -290,6 +300,27 @@ const listCheckIns = asyncHandler<ProtectedRequest>(async (req, res) => {
     new SuccessResponse('Check-ins retrieved', { checkIns }).send(res);
 });
 
+function dateKeyTodayInTimeZone(timeZone: string): string {
+    const parts = new Intl.DateTimeFormat('en', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).formatToParts(new Date());
+
+    const y = parts.find((p) => p.type === 'year')?.value;
+    const m = parts.find((p) => p.type === 'month')?.value;
+    const d = parts.find((p) => p.type === 'day')?.value;
+
+    if (!y || !m || !d) throw new Error('Unable to compute local date key');
+    return `${y}-${m}-${d}`;
+}
+
+function monthStartKeyFromToday(todayKey: string): string {
+    // todayKey is YYYY-MM-DD
+    return `${todayKey.slice(0, 8)}01`;
+}
+
 const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
     const parentId = req.user.parentId;
     const childId = Number(req.params.childId);
@@ -297,43 +328,40 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
     await assertChildOwnership(parentId, childId);
 
     const q = req.query as unknown as RoutineSchema['CheckInRangeQuery'];
-    const toDateKey = (dt: Date) => dt.toISOString().slice(0, 10);
 
-    const utcTodayKey = (() => {
-        const now = new Date();
-        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    })();
+    const routine = await routineRepository.getRoutineWithItems(parentId, childId);
+    const timeZone = routine?.timezone ?? 'Asia/Kolkata';
 
-    const startDateKey = q.from
-        ? routineRepository.parseDateKey(q.from)
-        : new Date(Date.UTC(utcTodayKey.getUTCFullYear(), utcTodayKey.getUTCMonth(), 1));
+    const defaultToKey = dateKeyTodayInTimeZone(timeZone);
+    const defaultFromKey = monthStartKeyFromToday(defaultToKey);
 
-    const endDateKey = q.to ? routineRepository.parseDateKey(q.to) : utcTodayKey;
+    const fromKey = q.from ?? defaultFromKey;
+    const toKey = q.to ?? defaultToKey;
+
+    const startDateKey = routineRepository.parseDateKey(fromKey);
+    const endDateKey = routineRepository.parseDateKey(toKey);
 
     if (startDateKey.getTime() > endDateKey.getTime()) {
         throw new BadRequestError('from must be less than or equal to to');
     }
 
-    const routine = await routineRepository.getRoutineWithItems(parentId, childId);
     if (!routine) {
         new SuccessResponse('No routine found', {
             range: {
-                from: toDateKey(startDateKey),
-                to: toDateKey(endDateKey),
+                from: fromKey,
+                to: toKey,
             },
             completionRate: 0,
             totalScheduled: 0,
             done: 0,
             skipped: 0,
             partial: 0,
+            missing: 0,
             currentStreak: 0,
             longestStreak: 0,
         }).send(res);
         return;
     }
-
-    const fromKey = toDateKey(startDateKey);
-    const toKey = toDateKey(endDateKey);
 
     const activeItemIds = new Set(routine.items.map((i) => i.id));
     const itemIdsByDay = routine.items.reduce(
@@ -341,7 +369,7 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
             acc[i.dayOfWeek].push(i.id);
             return acc;
         },
-        emptyWeek() as Record<DayOfWeek, number[]>,
+        emptyWeek<number>(),
     );
 
     const rawCheckIns = await routineRepository.listCheckIns({
@@ -359,7 +387,7 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
 
     const checkInByDateItem = new Map<string, Map<number, CheckIn>>();
     for (const c of checkIns) {
-        const dateKey = toDateKey(c.date);
+        const dateKey = c.date.toISOString().slice(0, 10);
         const byItem = checkInByDateItem.get(dateKey) ?? new Map<number, CheckIn>();
         byItem.set(c.itemId, c);
         checkInByDateItem.set(dateKey, byItem);
@@ -376,7 +404,7 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
 
     const d = new Date(startDateKey);
     while (d.getTime() <= endDateKey.getTime()) {
-        const dateKey = toDateKey(d);
+        const dateKey = d.toISOString().slice(0, 10);
         const dow = routineRepository.dayOfWeekFromDateKey(d);
         const scheduledIds = itemIdsByDay[dow] ?? [];
         const scheduledCount = scheduledIds.length;
@@ -419,7 +447,7 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
     let currentStreak = 0;
     const back = new Date(endDateKey);
     while (back.getTime() >= startDateKey.getTime()) {
-        const dateKey = toDateKey(back);
+        const dateKey = back.toISOString().slice(0, 10);
         const dow = routineRepository.dayOfWeekFromDateKey(back);
         const scheduledIds = itemIdsByDay[dow] ?? [];
         const scheduledCount = scheduledIds.length;
@@ -447,6 +475,7 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
 
     const completionRate =
         totalScheduled === 0 ? 0 : Math.round((weightedDone / totalScheduled) * 100);
+    const missing = Math.max(0, totalScheduled - (done + skipped + partial));
 
     new SuccessResponse('Progress retrieved', {
         range: { from: fromKey, to: toKey },
@@ -454,6 +483,7 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
         done,
         skipped,
         partial,
+        missing,
         completionRate,
         currentStreak,
         longestStreak,

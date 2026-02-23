@@ -1,6 +1,14 @@
 import { prisma } from '../db/prisma.js';
 
-const extractPriorityTags = (responses: any[]) => {
+type TaggableResponse = {
+    parentResponse: number;
+    question: {
+        weight: number;
+        tags: string[];
+    };
+};
+
+const extractPriorityTags = (responses: TaggableResponse[]) => {
     const tagScoreMap: Record<string, number> = {};
   
     for (const r of responses) {
