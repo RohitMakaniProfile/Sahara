@@ -22,6 +22,7 @@ model Parent {
   updatedAt                   DateTime              @updatedAt @map("updated_at")
   autismBehaviourForms        AutismBehaviourForm[]
   children                    Child[]
+  childRoutines               ChildRoutine[]
   forumPosts                  CommunityPost[]
   comments                    PostComment[]
   refreshTokens               RefreshToken[]
@@ -46,6 +47,8 @@ model Child {
   createdAt            DateTime                @default(now()) @map("created_at")
   updatedAt            DateTime                @updatedAt @map("updated_at")
   autismBehaviourForms AutismBehaviourForm[]
+  routines             ChildRoutine[]
+  routineCheckIns      RoutineCheckIn[]
   parent               Parent                  @relation(fields: [parentId], references: [id], onDelete: Cascade)
 
   @@index([parentId])
@@ -202,11 +205,72 @@ model Activity {
   description String?
   tags        String[] @default([])
   videoUrl    String?
+  routineItems ChildRoutineItem[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("activities")
+}
+
+model ChildRoutine {
+  id        Int               @id @default(autoincrement())
+  childId   Int               @map("child_id")
+  parentId  Int               @map("parent_id")
+  name      String            @default("Default")
+  timezone  String            @default("Asia/Kolkata")
+  isActive  Boolean           @default(true) @map("is_active")
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  child     Child             @relation(fields: [childId], references: [id], onDelete: Cascade)
+  parent    Parent            @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  items     ChildRoutineItem[]
+
+  @@index([childId])
+  @@index([parentId])
+  @@map("child_routines")
+}
+
+model ChildRoutineItem {
+  id          Int             @id @default(autoincrement())
+  routineId   Int             @map("routine_id")
+  dayOfWeek   DayOfWeek       @map("day_of_week")
+  startMinute Int             @map("start_minute")
+  endMinute   Int             @map("end_minute")
+  title       String
+  notes       String?
+  order       Int             @default(0)
+  isActive    Boolean         @default(true) @map("is_active")
+  activityId  Int?            @map("activity_id")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  routine     ChildRoutine    @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  activity    Activity?       @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  checkIns    RoutineCheckIn[]
+
+  @@index([routineId, dayOfWeek])
+  @@index([activityId])
+  @@map("child_routine_items")
+}
+
+model RoutineCheckIn {
+  id        Int                @id @default(autoincrement())
+  childId   Int                @map("child_id")
+  itemId    Int                @map("item_id")
+  date      DateTime           @map("date")
+  status    RoutineCheckStatus
+  note      String?
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  child     Child              @relation(fields: [childId], references: [id], onDelete: Cascade)
+  item      ChildRoutineItem   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([childId, itemId, date])
+  @@index([childId, date])
+  @@index([itemId])
+  @@map("routine_checkins")
 }
 
 
@@ -261,4 +325,20 @@ enum ParentChildRelations {
 enum VoteType {
   UPVOTE
   DOWNVOTE
+}
+
+enum DayOfWeek {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+enum RoutineCheckStatus {
+  DONE
+  SKIPPED
+  PARTIAL
 }

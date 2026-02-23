@@ -4,6 +4,7 @@ import childRouter from './child.routes.js';
 import formRouter from './form.routes.js';
 import communityPostsRouter from './communityPost.routes.js';
 import activityRouter from './activity.routes.js';
+import routineRouter from './routine.routes.js';
 
 const router = express.Router();
 
@@ -12,5 +13,6 @@ router.use('/child', childRouter);
 router.use('/form', formRouter);
 router.use('/posts', communityPostsRouter);
 router.use('/activity', activityRouter);
+router.use('/routine', routineRouter);
 
 export default router;
