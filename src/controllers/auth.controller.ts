@@ -187,62 +187,6 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
     }).send(res);
 });
 
-/**
- * Reissues the token to keep the session continue.
- * @author Hemant Sharma
- */
-// const refresh = asyncHandler(async (req: Request, res: Response) => {
-//     // For Web
-//     const tokenFromCookie = req.cookies.refreshToken;
-//     // For Mobile devices
-//     const tokenFromBody = req.body.refreshToken;
-
-//     const refreshToken = tokenFromBody || tokenFromCookie;
-//     if (!refreshToken) throw new BadRequestError('No refresh token');
-
-//     const payload = jwtUtil.verifyRefreshToken(refreshToken);
-//     if (!payload) throw new BadRequestError('Invalid refresh token');
-
-//     const savedTokens = await refreshRepository.findManyByParent(
-//         payload.parentId,
-//     );
-
-//     let match: RefreshToken | null = null;
-//     for (const t of savedTokens) {
-//         const ok = await PasswordUtils.compare(refreshToken, t.tokenHash);
-//         if (ok) {
-//             match = t;
-//             break;
-//         }
-//     }
-
-//     if (!match) {
-//         await refreshRepository.deleteAllByParent(payload.parentId);
-//         throw new BadRequestError(
-//             'Token reuse detected — logged out everywhere.',
-//         );
-//     }
-
-//     // rotation
-//     const newAccess = jwtUtil.generateAccessToken(payload.parentId);
-//     const newRefresh = jwtUtil.generateRefreshToken(payload.parentId);
-//     const hashedNewRefresh = await PasswordUtils.hash(newRefresh);
-//     const expiresAt = new Date(Date.now() + refreshTokenTtlMs);
-
-//     await refreshRepository.rotateToken(match.id, {
-//         tokenHash: hashedNewRefresh,
-//         parentId: payload.parentId,
-//         expiresAt,
-//     });
-
-//     sendRefreshCookie(res, newRefresh, expiresAt);
-//     new SuccessResponse('Refreshed', {
-//         accessToken: newAccess,
-//         // Send refresh token also for mobile devices
-//         refreshToken: newRefresh,
-//         refreshTokenExpiresAt: expiresAt,
-//     }).send(res);
-// });
 
 /**
  * @author Hemant Sharma

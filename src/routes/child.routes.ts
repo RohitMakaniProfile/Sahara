@@ -16,6 +16,8 @@ router.post(
     childController.childRegister,
 );
 
+router.get('/', childController.listChildren);
+
 router.get(
     '/:childId',
     validator(childSchema.ChildParams, ValidationSource.PARAM),

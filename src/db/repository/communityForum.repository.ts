@@ -117,7 +117,7 @@ const softDeletePost = async (postId: number) => {
             id: postId,
         },
         data: {
-            isActive: true,
+            isActive: false,
         },
     });
 };

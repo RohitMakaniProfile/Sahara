@@ -57,10 +57,25 @@ const updateById = async (childId: number, data: Prisma.ChildUpdateInput) => {
     });
 };
 
+const listByParentId = async (parentId: number) => {
+    return prisma.child.findMany({
+        where: { parentId },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        select: {
+            id: true,
+            name: true,
+            dob: true,
+            gender: true,
+            relationWithParent: true,
+        },
+    });
+};
+
 export default {
     create,
     findParent,
     latestFormResults,
     findById,
     updateById,
+    listByParentId,
 };

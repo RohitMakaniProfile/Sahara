@@ -12,16 +12,16 @@ export interface RefreshTokenPayload {
 }
 
 const generateAccessToken = (parentId: number) => {
-    return jwt.sign({ parentId }, jwtSecret!, { expiresIn: '15m' });
+    return jwt.sign({ parentId }, jwtSecret, { expiresIn: '15m' });
 };
 
 const generateRefreshToken = (parentId: number) => {
-    return jwt.sign({ parentId }, refreshSecret!, { expiresIn: '7d' });
+    return jwt.sign({ parentId }, refreshSecret, { expiresIn: '7d' });
 };
 
 const verifyAccessToken = (token: string): AccessTokenPayload | null => {
     try {
-        return jwt.verify(token, jwtSecret!) as AccessTokenPayload;
+        return jwt.verify(token, jwtSecret) as AccessTokenPayload;
     } catch {
         return null;
     }
@@ -29,7 +29,7 @@ const verifyAccessToken = (token: string): AccessTokenPayload | null => {
 
 const verifyRefreshToken = (token: string): RefreshTokenPayload | null => {
     try {
-        return jwt.verify(token, refreshSecret!) as RefreshTokenPayload;
+        return jwt.verify(token, refreshSecret) as RefreshTokenPayload;
     } catch {
         return null;
     }

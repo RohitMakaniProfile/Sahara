@@ -91,6 +91,24 @@ const getChildLatestFormResults = asyncHandler<ProtectedRequest>(
     },
 );
 
+const listChildren = asyncHandler<ProtectedRequest>(
+    async (req: ProtectedRequest, res: Response) => {
+        const parentId = req.user.parentId;
+        const children = await childRepository.listByParentId(parentId);
+
+        new SuccessResponse('Children retrieved', {
+            children: children.map((c) => ({
+                id: c.id,
+                name: c.name,
+                dob: c.dob,
+                age: childServices.calculateAge(c.dob),
+                gender: c.gender,
+                relationWithParent: c.relationWithParent,
+            })),
+        }).send(res);
+    },
+);
+
 const getChildProfile = asyncHandler<ProtectedRequest>(
     async (req: ProtectedRequest, res: Response) => {
         const parentId = req.user?.parentId;
@@ -182,6 +200,7 @@ const updateChildProfile = asyncHandler<ProtectedRequest>(
 export default {
     childRegister,
     getChildLatestFormResults,
+    listChildren,
     getChildProfile,
     updateChildProfile,
 };
