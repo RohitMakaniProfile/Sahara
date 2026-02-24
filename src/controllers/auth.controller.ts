@@ -92,25 +92,32 @@ const login = asyncHandler(async (req: Request, res: Response) => {
     }).send(res);
 });
 
+// Simple in-memory grace window cache
+// Key: tokenHash, Value: { newAccess, newRefresh, expiresAt, createdAt }
+const refreshGraceCache = new Map<string, {
+    newAccess: string;
+    newRefresh: string;
+    expiresAt: Date;
+    createdAt: number;
+}>();
+
+const GRACE_WINDOW_MS = 5000; // 5 seconds
+
 /**
  * Reissues the token to keep the session continue.
  * @author Hemant Sharma
  */
 const refresh = asyncHandler(async (req: Request, res: Response) => {
-    // For Web
     const tokenFromCookie = req.cookies.refreshToken;
-    // For Mobile devices
     const tokenFromBody = req.body.refreshToken;
-
     const refreshToken = tokenFromBody || tokenFromCookie;
+
     if (!refreshToken) throw new BadRequestError('No refresh token');
 
     const payload = jwtUtil.verifyRefreshToken(refreshToken);
     if (!payload) throw new BadRequestError('Invalid refresh token');
 
-    const savedTokens = await refreshRepository.findManyByParent(
-        payload.parentId,
-    );
+    const savedTokens = await refreshRepository.findManyByParent(payload.parentId);
 
     let match: RefreshToken | null = null;
     for (const t of savedTokens) {
@@ -122,13 +129,30 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
     }
 
     if (!match) {
+        // ✅ CHECK GRACE WINDOW before triggering reuse detection
+        // Find if there's a recent cached response for this token
+        const now = Date.now();
+        for (const [cachedTokenHash, cached] of refreshGraceCache.entries()) {
+            if (now - cached.createdAt < GRACE_WINDOW_MS) {
+                const isGraceMatch = await PasswordUtils.compare(refreshToken, cachedTokenHash);
+                if (isGraceMatch) {
+                    // This is a concurrent request — respond idempotently with the same tokens
+                    sendRefreshCookie(res, cached.newRefresh, cached.expiresAt);
+                    new SuccessResponse('Refreshed', {
+                        accessToken: cached.newAccess,
+                        refreshToken: cached.newRefresh,
+                        refreshTokenExpiresAt: cached.expiresAt,
+                    }).send(res);
+                }
+            }
+        }
+
+        // No grace match found — this is a genuine reuse attack
         await refreshRepository.deleteAllByParent(payload.parentId);
-        throw new BadRequestError(
-            'Token reuse detected — logged out everywhere.',
-        );
+        throw new BadRequestError('Token reuse detected — logged out everywhere.');
     }
 
-    // rotation
+    // Normal rotation
     const newAccess = jwtUtil.generateAccessToken(payload.parentId);
     const newRefresh = jwtUtil.generateRefreshToken(payload.parentId);
     const hashedNewRefresh = await PasswordUtils.hash(newRefresh);
@@ -140,14 +164,85 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
         expiresAt,
     });
 
+    // ✅ Cache the old token hash → new tokens for the grace window
+    refreshGraceCache.set(match.tokenHash, {
+        newAccess,
+        newRefresh,
+        expiresAt,
+        createdAt: Date.now(),
+    });
+
+    // Clean up expired grace entries to avoid memory leak
+    for (const [key, val] of refreshGraceCache.entries()) {
+        if (Date.now() - val.createdAt >= GRACE_WINDOW_MS) {
+            refreshGraceCache.delete(key);
+        }
+    }
+
     sendRefreshCookie(res, newRefresh, expiresAt);
     new SuccessResponse('Refreshed', {
         accessToken: newAccess,
-        // Send refresh token also for mobile devices
         refreshToken: newRefresh,
         refreshTokenExpiresAt: expiresAt,
     }).send(res);
 });
+
+/**
+ * Reissues the token to keep the session continue.
+ * @author Hemant Sharma
+ */
+// const refresh = asyncHandler(async (req: Request, res: Response) => {
+//     // For Web
+//     const tokenFromCookie = req.cookies.refreshToken;
+//     // For Mobile devices
+//     const tokenFromBody = req.body.refreshToken;
+
+//     const refreshToken = tokenFromBody || tokenFromCookie;
+//     if (!refreshToken) throw new BadRequestError('No refresh token');
+
+//     const payload = jwtUtil.verifyRefreshToken(refreshToken);
+//     if (!payload) throw new BadRequestError('Invalid refresh token');
+
+//     const savedTokens = await refreshRepository.findManyByParent(
+//         payload.parentId,
+//     );
+
+//     let match: RefreshToken | null = null;
+//     for (const t of savedTokens) {
+//         const ok = await PasswordUtils.compare(refreshToken, t.tokenHash);
+//         if (ok) {
+//             match = t;
+//             break;
+//         }
+//     }
+
+//     if (!match) {
+//         await refreshRepository.deleteAllByParent(payload.parentId);
+//         throw new BadRequestError(
+//             'Token reuse detected — logged out everywhere.',
+//         );
+//     }
+
+//     // rotation
+//     const newAccess = jwtUtil.generateAccessToken(payload.parentId);
+//     const newRefresh = jwtUtil.generateRefreshToken(payload.parentId);
+//     const hashedNewRefresh = await PasswordUtils.hash(newRefresh);
+//     const expiresAt = new Date(Date.now() + refreshTokenTtlMs);
+
+//     await refreshRepository.rotateToken(match.id, {
+//         tokenHash: hashedNewRefresh,
+//         parentId: payload.parentId,
+//         expiresAt,
+//     });
+
+//     sendRefreshCookie(res, newRefresh, expiresAt);
+//     new SuccessResponse('Refreshed', {
+//         accessToken: newAccess,
+//         // Send refresh token also for mobile devices
+//         refreshToken: newRefresh,
+//         refreshTokenExpiresAt: expiresAt,
+//     }).send(res);
+// });
 
 /**
  * @author Hemant Sharma
