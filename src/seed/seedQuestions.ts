@@ -95,7 +95,11 @@ const questions: Q[] = [
         categoryName: 'Sensory Processing',
         weight: 3,
         order: 1,
-        tags: ['tactile_processing', 'auditory_processing', 'calming_strategies'],
+        tags: [
+            'tactile_processing',
+            'auditory_processing',
+            'calming_strategies',
+        ],
     },
     {
         question: 'Seeks certain sensations?',
@@ -111,7 +115,11 @@ const questions: Q[] = [
         categoryName: 'Emotional Regulation',
         weight: 3,
         order: 1,
-        tags: ['calming_strategies', 'frustration_tolerance', 'emotional_regulation'],
+        tags: [
+            'calming_strategies',
+            'frustration_tolerance',
+            'emotional_regulation',
+        ],
     },
     {
         question: 'Trouble calming down once upset?',
@@ -127,7 +135,12 @@ const questions: Q[] = [
         categoryName: 'Motor Skills',
         weight: 2,
         order: 1,
-        tags: ['grip_strength', 'finger_control', 'hand_eye_coordination', 'pre_writing'],
+        tags: [
+            'grip_strength',
+            'finger_control',
+            'hand_eye_coordination',
+            'pre_writing',
+        ],
     },
     {
         question: 'Walks on tiptoes often?',

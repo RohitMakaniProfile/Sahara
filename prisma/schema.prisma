@@ -272,6 +272,40 @@ model RoutineCheckIn {
   @@index([itemId])
   @@map("routine_checkins")
 }
+model AACCategory {
+  id          Int      @id @default(autoincrement())
+  title       String
+  iconUrl    String?   @map("icon_url")
+  isActive    Boolean  @default(true) @map("is_active")
+  orderIndex  Int      @default(0) @map("order_index")
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  symbols     AACSymbol[]
+
+
+  @@map("aac_categories")
+}
+model AACSymbol {
+  id          Int      @id @default(autoincrement())
+  title       String
+  iconUrl     String?  @map("icon_url")
+  isActive    Boolean  @default(true) @map("is_active")
+  ttsText     String  @map("tts_text")
+  orderIndex  Int      @default(0) @map("order_index")
+  categoryId  Int?      @map("category_id")
+  category    AACCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  isGlobalQuick Boolean @default(false) @map("is_global_quick")
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([categoryId])
+  @@map("aac_symbols")
+
+}
 
 
 

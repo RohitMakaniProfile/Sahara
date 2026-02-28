@@ -12,7 +12,7 @@ const router = express.Router();
 // [X][X] create posts
 // [X][X] delete post
 // [X][X] edit title and content of the post
-// [][] Get Post title, full content and comments(with pagination) 
+// [][] Get Post title, full content and comments(with pagination)
 // [X][X] add comment in post
 // [X][X] edit comment
 // [X][X] delete comment
@@ -72,9 +72,9 @@ router.delete(
 );
 
 router.get(
-    '/', 
+    '/',
     validator(forumSchema.PaginationPostsQuery, ValidationSource.QUERY),
-    communityPostController.getCommunityPosts
+    communityPostController.getCommunityPosts,
 );
 
 // vote on post
@@ -82,29 +82,28 @@ router.post(
     '/:postId/vote',
     validator(forumSchema.PostParams, ValidationSource.PARAM),
     validator(forumSchema.VoteSchema, ValidationSource.BODY),
-    communityPostController.voteOnPost
-)
+    communityPostController.voteOnPost,
+);
 // vote on comment
 router.post(
-  '/:postId/comment/:commentId/vote',
-  validator(forumSchema.CommentParams, ValidationSource.PARAM),
-  validator(forumSchema.VoteSchema, ValidationSource.BODY),
-  communityPostController.voteOnComment,
+    '/:postId/comment/:commentId/vote',
+    validator(forumSchema.CommentParams, ValidationSource.PARAM),
+    validator(forumSchema.VoteSchema, ValidationSource.BODY),
+    communityPostController.voteOnComment,
 );
 // get all parent-comments for a post
 router.get(
-  '/:postId/comment',
-  validator(forumSchema.PostParams, ValidationSource.PARAM),
-  validator(forumSchema.PaginationPostsQuery, ValidationSource.QUERY),
-  communityPostController.getCommentsForPost,
+    '/:postId/comment',
+    validator(forumSchema.PostParams, ValidationSource.PARAM),
+    validator(forumSchema.PaginationPostsQuery, ValidationSource.QUERY),
+    communityPostController.getCommentsForPost,
 );
 // get the  top-level replies on a comment
 router.get(
-  '/:postId/comment/:commentId/replies',
-  validator(forumSchema.CommentParams, ValidationSource.PARAM),
-  validator(forumSchema.PaginationPostsQuery, ValidationSource.QUERY),
-  communityPostController.getRepliesForComment,
+    '/:postId/comment/:commentId/replies',
+    validator(forumSchema.CommentParams, ValidationSource.PARAM),
+    validator(forumSchema.PaginationPostsQuery, ValidationSource.QUERY),
+    communityPostController.getRepliesForComment,
 );
-
 
 export default router;

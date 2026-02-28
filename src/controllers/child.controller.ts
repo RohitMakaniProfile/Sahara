@@ -7,7 +7,6 @@ import { BadRequestError } from '../core/ApiError.js';
 import childServices from '../services/child.services.js';
 import type { ChildSchema } from '../schema/child.schema.js';
 
-
 const childRegister = asyncHandler<ProtectedRequest>(
     async (req: ProtectedRequest, res: Response) => {
         const parentId = req.user.parentId;
@@ -39,7 +38,7 @@ const childRegister = asyncHandler<ProtectedRequest>(
         });
 
         new SuccessResponse('Child Registered', {
-            child: { id: child.id, name: child.name, dob: child.dob ,age},
+            child: { id: child.id, name: child.name, dob: child.dob, age },
         }).send(res);
     },
 );

@@ -107,7 +107,11 @@ async function getOrCreateRoutine(params: {
     name?: string;
 }) {
     const existing = await prisma.childRoutine.findFirst({
-        where: { parentId: params.parentId, childId: params.childId, isActive: true },
+        where: {
+            parentId: params.parentId,
+            childId: params.childId,
+            isActive: true,
+        },
         orderBy: { updatedAt: 'desc' },
     });
     if (existing) return existing;
@@ -132,7 +136,10 @@ async function replaceRoutineWeek(params: {
 }) {
     for (const day of Object.keys(params.week) as DayOfWeek[]) {
         if (hasOverlaps(params.week[day])) {
-            return { ok: false as const, reason: `Overlapping items for ${day}` };
+            return {
+                ok: false as const,
+                reason: `Overlapping items for ${day}`,
+            };
         }
     }
 
@@ -248,7 +255,12 @@ async function updateRoutineItem(params: {
 }) {
     const existing = await prisma.childRoutineItem.findUnique({
         where: { id: params.itemId },
-        select: { id: true, dayOfWeek: true, startMinute: true, endMinute: true },
+        select: {
+            id: true,
+            dayOfWeek: true,
+            startMinute: true,
+            endMinute: true,
+        },
     });
     if (!existing) return null;
 
@@ -277,7 +289,9 @@ async function updateRoutineItem(params: {
             ...(params.startMinute !== undefined
                 ? { startMinute: params.startMinute }
                 : {}),
-            ...(params.endMinute !== undefined ? { endMinute: params.endMinute } : {}),
+            ...(params.endMinute !== undefined
+                ? { endMinute: params.endMinute }
+                : {}),
             ...(params.title !== undefined ? { title: params.title } : {}),
             ...(params.notes !== undefined ? { notes: params.notes } : {}),
             ...(params.order !== undefined ? { order: params.order } : {}),
@@ -302,8 +316,14 @@ async function getDayItemsWithCheckIns(params: {
     childId: number;
     date: string;
 }) {
-    type CheckInLite = { itemId: number; status: RoutineCheckStatus; note: string | null };
-    type RoutineItem = Awaited<ReturnType<typeof prisma.childRoutineItem.findMany>>[number];
+    type CheckInLite = {
+        itemId: number;
+        status: RoutineCheckStatus;
+        note: string | null;
+    };
+    type RoutineItem = Awaited<
+        ReturnType<typeof prisma.childRoutineItem.findMany>
+    >[number];
     type DayItem = RoutineItem & {
         checkIn: CheckInLite | null;
     };
@@ -312,7 +332,11 @@ async function getDayItemsWithCheckIns(params: {
     const dayOfWeek = dayOfWeekFromDateKey(dateKey);
 
     const routine = await prisma.childRoutine.findFirst({
-        where: { parentId: params.parentId, childId: params.childId, isActive: true },
+        where: {
+            parentId: params.parentId,
+            childId: params.childId,
+            isActive: true,
+        },
         orderBy: { updatedAt: 'desc' },
         select: { id: true, timezone: true },
     });
@@ -400,7 +424,14 @@ async function upsertCheckIn(params: {
             status: params.status,
             ...(params.note !== undefined ? { note: params.note } : {}),
         },
-        select: { id: true, childId: true, itemId: true, date: true, status: true, note: true },
+        select: {
+            id: true,
+            childId: true,
+            itemId: true,
+            date: true,
+            status: true,
+            note: true,
+        },
     });
 
     return checkIn;
@@ -421,7 +452,9 @@ async function listCheckIns(params: {
         ...(params.from || params.to
             ? {
                   date: {
-                      ...(params.from ? { gte: parseDateKey(params.from) } : {}),
+                      ...(params.from
+                          ? { gte: parseDateKey(params.from) }
+                          : {}),
                       ...(params.to ? { lte: parseDateKey(params.to) } : {}),
                   },
               }
@@ -431,7 +464,13 @@ async function listCheckIns(params: {
     return prisma.routineCheckIn.findMany({
         where,
         orderBy: [{ date: 'asc' }, { itemId: 'asc' }],
-        select: { id: true, itemId: true, date: true, status: true, note: true },
+        select: {
+            id: true,
+            itemId: true,
+            date: true,
+            status: true,
+            note: true,
+        },
     });
 }
 
@@ -451,4 +490,3 @@ export default {
     upsertCheckIn,
     listCheckIns,
 };
-

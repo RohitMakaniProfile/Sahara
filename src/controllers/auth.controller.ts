@@ -94,12 +94,15 @@ const login = asyncHandler(async (req: Request, res: Response) => {
 
 // Simple in-memory grace window cache
 // Key: tokenHash, Value: { newAccess, newRefresh, expiresAt, createdAt }
-const refreshGraceCache = new Map<string, {
-    newAccess: string;
-    newRefresh: string;
-    expiresAt: Date;
-    createdAt: number;
-}>();
+const refreshGraceCache = new Map<
+    string,
+    {
+        newAccess: string;
+        newRefresh: string;
+        expiresAt: Date;
+        createdAt: number;
+    }
+>();
 
 const GRACE_WINDOW_MS = 5000; // 5 seconds
 
@@ -117,7 +120,9 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
     const payload = jwtUtil.verifyRefreshToken(refreshToken);
     if (!payload) throw new BadRequestError('Invalid refresh token');
 
-    const savedTokens = await refreshRepository.findManyByParent(payload.parentId);
+    const savedTokens = await refreshRepository.findManyByParent(
+        payload.parentId,
+    );
 
     let match: RefreshToken | null = null;
     for (const t of savedTokens) {
@@ -134,7 +139,10 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
         const now = Date.now();
         for (const [cachedTokenHash, cached] of refreshGraceCache.entries()) {
             if (now - cached.createdAt < GRACE_WINDOW_MS) {
-                const isGraceMatch = await PasswordUtils.compare(refreshToken, cachedTokenHash);
+                const isGraceMatch = await PasswordUtils.compare(
+                    refreshToken,
+                    cachedTokenHash,
+                );
                 if (isGraceMatch) {
                     // This is a concurrent request — respond idempotently with the same tokens
                     sendRefreshCookie(res, cached.newRefresh, cached.expiresAt);
@@ -149,7 +157,9 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
 
         // No grace match found — this is a genuine reuse attack
         await refreshRepository.deleteAllByParent(payload.parentId);
-        throw new BadRequestError('Token reuse detected — logged out everywhere.');
+        throw new BadRequestError(
+            'Token reuse detected — logged out everywhere.',
+        );
     }
 
     // Normal rotation
@@ -186,7 +196,6 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
         refreshTokenExpiresAt: expiresAt,
     }).send(res);
 });
-
 
 /**
  * @author Hemant Sharma

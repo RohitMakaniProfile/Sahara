@@ -40,14 +40,14 @@ export type CommunityPostSchema = {
     VoteSchema: z.infer<typeof VoteSchema>;
 };
 export type CommentWithVotes = {
-  id: bigint;
-  content: string;
-  createdAt: Date;
-  upvotes: bigint;
-  downvotes: bigint;
-  isActive: boolean;
-  myVote: 'UPVOTE' | 'DOWNVOTE' | null;
-  hasReplies: boolean;
+    id: bigint;
+    content: string;
+    createdAt: Date;
+    upvotes: bigint;
+    downvotes: bigint;
+    isActive: boolean;
+    myVote: 'UPVOTE' | 'DOWNVOTE' | null;
+    hasReplies: boolean;
 };
 
 export default {
@@ -59,6 +59,4 @@ export default {
     CommentParams,
     UpdateComment,
     PaginationPostsQuery,
-   
 };
-

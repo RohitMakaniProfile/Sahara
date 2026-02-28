@@ -8,4 +8,3 @@ router.use(protect);
 router.get('/profile', parentController.getProfile);
 
 export default router;
-
