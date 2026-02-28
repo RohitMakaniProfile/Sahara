@@ -32,7 +32,10 @@ const ChildUpdate = z
         relationWithParent: z.enum(ParentChildRelations).optional().nullable(),
         knownDiagnosis: z.enum(DiagnosisTypes).optional().nullable(),
         diagnosisStage: z.enum(DiagnosisStages).optional().nullable(),
-        developmentalStage: z.enum(ChildDevelopmentStages).optional().nullable(),
+        developmentalStage: z
+            .enum(ChildDevelopmentStages)
+            .optional()
+            .nullable(),
         dominantHand: z.string().min(1).max(50).optional().nullable(),
     })
     .refine((v) => Object.keys(v).length > 0, {
@@ -48,4 +51,3 @@ export default {
     ChildParams,
     ChildUpdate,
 };
-

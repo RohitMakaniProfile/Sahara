@@ -70,7 +70,6 @@ router.get(
     validator(routineSchema.ChildParams, ValidationSource.PARAM),
     validator(routineSchema.CheckInRangeQuery, ValidationSource.QUERY),
     routineController.getProgress,
-  );
+);
 
 export default router;
-

@@ -6,10 +6,6 @@ const router = Router();
 
 router.use(protect);
 
-router.get(
-    '/:childId',
-    protect,
-    activityController.getActivities
-  );
+router.get('/:childId', protect, activityController.getActivities);
 
 export default router;

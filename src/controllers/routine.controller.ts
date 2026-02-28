@@ -1,7 +1,14 @@
 import type { ChildRoutineItem, DayOfWeek } from '@prisma/client';
 import { asyncHandler } from '../core/asyncHandler.js';
-import { BadRequestError, ForbiddenError, NotFoundError } from '../core/ApiError.js';
-import { SuccessCreatedResponse, SuccessResponse } from '../core/ApiResponse.js';
+import {
+    BadRequestError,
+    ForbiddenError,
+    NotFoundError,
+} from '../core/ApiError.js';
+import {
+    SuccessCreatedResponse,
+    SuccessResponse,
+} from '../core/ApiResponse.js';
 import routineRepository from '../db/repository/routine.repository.js';
 import type { ProtectedRequest } from '../types/app-requests.js';
 import type { RoutineSchema } from '../schema/routine.schema.js';
@@ -54,7 +61,10 @@ const getRoutine = asyncHandler<ProtectedRequest>(async (req, res) => {
     const childId = Number(req.params.childId);
     await assertChildOwnership(parentId, childId);
 
-    const routine = await routineRepository.getRoutineWithItems(parentId, childId);
+    const routine = await routineRepository.getRoutineWithItems(
+        parentId,
+        childId,
+    );
     if (!routine) {
         new SuccessResponse('No routine found', {
             routine: null,
@@ -116,7 +126,10 @@ const putRoutine = asyncHandler<ProtectedRequest>(async (req, res) => {
 
     if (!result.ok) throw new BadRequestError(result.reason);
 
-    const updated = await routineRepository.getRoutineWithItems(parentId, childId);
+    const updated = await routineRepository.getRoutineWithItems(
+        parentId,
+        childId,
+    );
     const week = emptyWeek<ReturnType<typeof serializeItem>>();
     for (const item of updated?.items ?? []) {
         week[item.dayOfWeek].push(serializeItem(item));
@@ -143,7 +156,10 @@ const createItem = asyncHandler<ProtectedRequest>(async (req, res) => {
     const childId = Number(req.params.childId);
     await assertChildOwnership(parentId, childId);
 
-    const routine = await routineRepository.getOrCreateRoutine({ parentId, childId });
+    const routine = await routineRepository.getOrCreateRoutine({
+        parentId,
+        childId,
+    });
     const body = req.body as RoutineSchema['RoutineItemCreate'];
 
     const created = await routineRepository.createRoutineItem({
@@ -154,7 +170,9 @@ const createItem = asyncHandler<ProtectedRequest>(async (req, res) => {
         title: body.title,
         ...(body.notes !== undefined ? { notes: body.notes } : {}),
         order: body.order,
-        ...(body.activityId !== undefined ? { activityId: body.activityId } : {}),
+        ...(body.activityId !== undefined
+            ? { activityId: body.activityId }
+            : {}),
     });
 
     if (!created.ok) throw new BadRequestError(created.reason);
@@ -183,12 +201,16 @@ const updateItem = asyncHandler<ProtectedRequest>(async (req, res) => {
         routineId: item.routineId,
         itemId,
         ...(body.dayOfWeek !== undefined ? { dayOfWeek: body.dayOfWeek } : {}),
-        ...(body.startMinute !== undefined ? { startMinute: body.startMinute } : {}),
+        ...(body.startMinute !== undefined
+            ? { startMinute: body.startMinute }
+            : {}),
         ...(body.endMinute !== undefined ? { endMinute: body.endMinute } : {}),
         ...(body.title !== undefined ? { title: body.title } : {}),
         ...(body.notes !== undefined ? { notes: body.notes } : {}),
         ...(body.order !== undefined ? { order: body.order } : {}),
-        ...(body.activityId !== undefined ? { activityId: body.activityId } : {}),
+        ...(body.activityId !== undefined
+            ? { activityId: body.activityId }
+            : {}),
     });
 
     if (!updated) throw new NotFoundError('Routine item not found');
@@ -275,7 +297,8 @@ const upsertCheckIn = asyncHandler<ProtectedRequest>(async (req, res) => {
         ...(body.note !== undefined ? { note: body.note } : {}),
     });
 
-    if (!checkIn) throw new NotFoundError('Routine item not found for this child');
+    if (!checkIn)
+        throw new NotFoundError('Routine item not found for this child');
 
     new SuccessResponse('Check-in upserted', { checkIn }).send(res);
 });
@@ -329,7 +352,10 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
 
     const q = req.query as unknown as RoutineSchema['CheckInRangeQuery'];
 
-    const routine = await routineRepository.getRoutineWithItems(parentId, childId);
+    const routine = await routineRepository.getRoutineWithItems(
+        parentId,
+        childId,
+    );
     const timeZone = routine?.timezone ?? 'Asia/Kolkata';
 
     const defaultToKey = dateKeyTodayInTimeZone(timeZone);
@@ -364,13 +390,10 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
     }
 
     const activeItemIds = new Set(routine.items.map((i) => i.id));
-    const itemIdsByDay = routine.items.reduce(
-        (acc, i) => {
-            acc[i.dayOfWeek].push(i.id);
-            return acc;
-        },
-        emptyWeek<number>(),
-    );
+    const itemIdsByDay = routine.items.reduce((acc, i) => {
+        acc[i.dayOfWeek].push(i.id);
+        return acc;
+    }, emptyWeek<number>());
 
     const rawCheckIns = await routineRepository.listCheckIns({
         parentId,
@@ -388,7 +411,8 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
     const checkInByDateItem = new Map<string, Map<number, CheckIn>>();
     for (const c of checkIns) {
         const dateKey = c.date.toISOString().slice(0, 10);
-        const byItem = checkInByDateItem.get(dateKey) ?? new Map<number, CheckIn>();
+        const byItem =
+            checkInByDateItem.get(dateKey) ?? new Map<number, CheckIn>();
         byItem.set(c.itemId, c);
         checkInByDateItem.set(dateKey, byItem);
     }
@@ -412,7 +436,8 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
         if (scheduledCount > 0) {
             totalScheduled += scheduledCount;
 
-            const byItem = checkInByDateItem.get(dateKey) ?? new Map<number, CheckIn>();
+            const byItem =
+                checkInByDateItem.get(dateKey) ?? new Map<number, CheckIn>();
 
             let dailyWeighted = 0;
             for (const itemId of scheduledIds) {
@@ -457,7 +482,8 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
             continue;
         }
 
-        const byItem = checkInByDateItem.get(dateKey) ?? new Map<number, CheckIn>();
+        const byItem =
+            checkInByDateItem.get(dateKey) ?? new Map<number, CheckIn>();
         let dailyWeighted = 0;
         for (const itemId of scheduledIds) {
             const c = byItem.get(itemId);
@@ -474,7 +500,9 @@ const getProgress = asyncHandler<ProtectedRequest>(async (req, res) => {
     }
 
     const completionRate =
-        totalScheduled === 0 ? 0 : Math.round((weightedDone / totalScheduled) * 100);
+        totalScheduled === 0
+            ? 0
+            : Math.round((weightedDone / totalScheduled) * 100);
     const missing = Math.max(0, totalScheduled - (done + skipped + partial));
 
     new SuccessResponse('Progress retrieved', {
@@ -501,4 +529,3 @@ export default {
     listCheckIns,
     getProgress,
 };
-
