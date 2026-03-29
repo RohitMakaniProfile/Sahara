@@ -8,6 +8,7 @@ import routineRouter from './routine.routes.js';
 import parentRouter from './parent.routes.js';
 import accRouter from './acc.routes.js';
 import aiRouter from './ai.routes.js';
+import videoRouter from './video.routes.js';
 
 const router = express.Router();
 
@@ -20,4 +21,5 @@ router.use('/activity', activityRouter);
 router.use('/routine', routineRouter);
 router.use('/acc', accRouter);
 router.use('/ai', aiRouter);
+router.use('/videos', videoRouter);
 export default router;
