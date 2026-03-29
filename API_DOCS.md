@@ -724,6 +724,174 @@ Kya child ko reassessment ki zaroorat hai? Automatically 3 triggers check karta 
 
 ---
 
+## 10. Video Library 🎥
+
+> Saare video endpoints protected hain (🔒). No DB needed — data hardcoded hai, instant response milta hai.
+
+---
+
+### GET `/api/videos` 🔒
+Saare 22 videos ek saath. Optional query filters bhi hain.
+
+```
+GET /api/videos
+GET /api/videos?audience=parent
+GET /api/videos?audience=child
+GET /api/videos?category=Motor Skills
+GET /api/videos?tag=breathing
+```
+
+```json
+// Response 200
+{
+  "message": "Videos fetched successfully",
+  "data": {
+    "videos": [
+      {
+        "id": 1,
+        "title": "What is Autism?",
+        "url": "https://youtu.be/P5M-VPjRCgE?si=CjKsKay_1ZQSSAj2",
+        "category": "Introduction",
+        "audience": "parent",
+        "tags": ["autism", "introduction", "basics"]
+      },
+      {
+        "id": 9,
+        "title": "ABC Song for Kids",
+        "url": "https://youtu.be/QvmZwQIsj3k?si=a4sFxHRtiSQOrHu5",
+        "category": "Learning",
+        "audience": "child",
+        "tags": ["abc", "alphabet", "learning", "song"]
+      }
+      // ... 22 videos total
+    ]
+  }
+}
+```
+
+---
+
+### GET `/api/videos/parent` 🔒
+8 parent guidance/introductory videos — category wise grouped.
+
+```json
+// Response 200
+{
+  "data": {
+    "total": 8,
+    "categories": {
+      "Introduction": [
+        {
+          "id": 1,
+          "title": "What is Autism?",
+          "url": "https://youtu.be/P5M-VPjRCgE?si=CjKsKay_1ZQSSAj2",
+          "category": "Introduction",
+          "audience": "parent",
+          "tags": ["autism", "introduction", "basics"]
+        },
+        {
+          "id": 2,
+          "title": "Autism Signs",
+          "url": "https://youtu.be/20VohL99fT8?si=vIN9cr65E6rSZbPo",
+          "category": "Introduction",
+          "audience": "parent",
+          "tags": ["autism", "signs", "symptoms"]
+        }
+      ],
+      "Motor Skills": [...],
+      "Communication": [...],
+      "Social Skills": [...],
+      "Cognitive": [...],
+      "Sensory Processing": [...]
+    }
+  }
+}
+```
+
+**Parent video categories:**
+| Category | Videos |
+|---|---|
+| Introduction | 2 (What is Autism, Autism Signs) |
+| Motor Skills | 2 (Fine Motor, Gross Motor) |
+| Communication | 1 |
+| Social Skills | 1 |
+| Cognitive | 1 |
+| Sensory Processing | 1 |
+
+---
+
+### GET `/api/videos/children` 🔒
+14 children activity videos — category wise grouped.
+
+```json
+// Response 200
+{
+  "data": {
+    "total": 14,
+    "categories": {
+      "Learning": [
+        { "id": 9,  "title": "ABC Song for Kids", "url": "https://youtu.be/QvmZwQIsj3k?si=a4sFxHRtiSQOrHu5", ... },
+        { "id": 10, "title": "ABC and Nursery Rhymes", "url": "https://youtu.be/_UR-l3QI2nE?si=3h1BQbXRW-mSb9KV", ... },
+        { "id": 11, "title": "Fun Learning for Kids", "url": "https://youtu.be/d2mlWUzA0B4?si=U6ZbBdvyrCRlXk7I", ... },
+        { "id": 12, "title": "Kids Learning Songs", "url": "https://youtu.be/wc3A5nlIjYM?si=tRt16MFBBMMej2HO", ... }
+      ],
+      "Animal Dance": [...],
+      "Stretching & Exercise": [...],
+      "Calming Sensory": [...],
+      "Occupational Therapy": [...],
+      "Breathing Exercise": [...],
+      "Social Skills": [...],
+      "Oral Motor Skills": [...]
+    }
+  }
+}
+```
+
+**Children video categories:**
+| Category | Videos |
+|---|---|
+| Learning | 4 (ABC, Nursery Rhymes, Fun Learning, Songs) |
+| Animal Dance | 2 |
+| Stretching & Exercise | 2 |
+| Calming Sensory | 1 |
+| Occupational Therapy | 1 |
+| Breathing Exercise | 2 |
+| Social Skills | 1 |
+| Oral Motor Skills | 1 |
+
+---
+
+### GET `/api/videos/categories` 🔒
+Sirf category names — dropdown/filter UI ke liye.
+
+```json
+// Response 200
+{
+  "data": {
+    "parent": [
+      "Introduction",
+      "Motor Skills",
+      "Communication",
+      "Social Skills",
+      "Cognitive",
+      "Sensory Processing"
+    ],
+    "child": [
+      "Learning",
+      "Animal Dance",
+      "Stretching & Exercise",
+      "Calming Sensory",
+      "Occupational Therapy",
+      "Breathing Exercise",
+      "Social Skills",
+      "Oral Motor Skills"
+    ]
+  }
+}
+```
+
+---
+
 ## Error Response Format
 
 Saare errors isi format mein aate hain:
@@ -747,20 +915,24 @@ Saare errors isi format mein aate hain:
 ## Quick Start Flow
 
 ```
-1.  POST /api/auth/register              → account banao
-2.  POST /api/auth/login                 → accessToken + refreshToken lo, store karo
-3.  POST /api/child/register             → child profile banao, childId save karo
-4.  GET  /api/form                       → questions fetch karo (ek baar, cache kar lo)
-5.  POST /api/form/submit                → assessment answers submit karo
-6.  GET  /api/activity/:childId          → recommended activities dekho
-7.  PUT  /api/routine/:childId           → weekly routine set karo
-8.  GET  /api/ai/routine/:childId/adaptive  → aaj ka AI-generated plan
-9.  POST /api/ai/chat/:childId           → parent coach se poochho
-10. GET  /api/ai/report/:childId         → therapist progress report
-11. GET  /api/ai/reassessment/:childId   → kya reassessment chahiye?
-12. GET  /api/acc                        → AAC keyboard load karo
-13. POST /api/ai/aac/:childId/log        → symbol usage track karo
-14. GET  /api/ai/aac/:childId/personalized → personalized AAC keyboard
+1.  POST /api/auth/register                  → account banao
+2.  POST /api/auth/login                     → accessToken + refreshToken lo, store karo
+3.  POST /api/child/register                 → child profile banao, childId save karo
+4.  GET  /api/form                           → questions fetch karo (ek baar, cache kar lo)
+5.  POST /api/form/submit                    → assessment answers submit karo
+6.  GET  /api/activity/:childId              → recommended activities dekho
+7.  PUT  /api/routine/:childId               → weekly routine set karo
+8.  GET  /api/ai/routine/:childId/adaptive   → aaj ka AI-generated plan
+9.  POST /api/ai/chat/:childId               → parent coach se poochho
+10. GET  /api/ai/report/:childId             → therapist progress report
+11. GET  /api/ai/reassessment/:childId       → kya reassessment chahiye?
+12. GET  /api/acc                            → AAC keyboard load karo
+13. POST /api/ai/aac/:childId/log            → symbol usage track karo
+14. GET  /api/ai/aac/:childId/personalized   → personalized AAC keyboard
+15. GET  /api/videos/parent                  → parent guidance videos (category wise)
+16. GET  /api/videos/children                → children activity videos (category wise)
+17. GET  /api/videos/categories              → sirf category names (dropdown ke liye)
+18. GET  /api/videos?audience=child&tag=calm → filtered videos
 ```
 
 ---
