@@ -2,8 +2,8 @@ import { asyncHandler } from '../core/asyncHandler.js';
 import type { Response } from 'express';
 import type { ProtectedRequest } from '../types/app-requests.js';
 import childRepository from '../db/repository/child.repository.js';
-import { SuccessResponse } from '../core/ApiResponse.js';
-import { BadRequestError } from '../core/ApiError.js';
+import { SuccessCreatedResponse, SuccessResponse } from '../core/ApiResponse.js';
+import { BadRequestError, ForbiddenError, NotFoundError } from '../core/ApiError.js';
 import childServices from '../services/child.services.js';
 import type { ChildSchema } from '../schema/child.schema.js';
 
@@ -37,7 +37,7 @@ const childRegister = asyncHandler<ProtectedRequest>(
             parentId,
         });
 
-        new SuccessResponse('Child Registered', {
+        new SuccessCreatedResponse('Child Registered', {
             child: { id: child.id, name: child.name, dob: child.dob, age },
         }).send(res);
     },
@@ -115,9 +115,9 @@ const getChildProfile = asyncHandler<ProtectedRequest>(
         if (Number.isNaN(childId)) throw new BadRequestError('Invalid childId');
 
         const child = await childRepository.findById(childId);
-        if (!child) throw new BadRequestError('Child not found');
+        if (!child) throw new NotFoundError('Child not found');
         if (child.parentId !== parentId) {
-            throw new BadRequestError('Child does not belong to the parent');
+            throw new ForbiddenError('Not allowed');
         }
 
         const age = childServices.calculateAge(child.dob);
@@ -149,9 +149,9 @@ const updateChildProfile = asyncHandler<ProtectedRequest>(
         if (Number.isNaN(childId)) throw new BadRequestError('Invalid childId');
 
         const existing = await childRepository.findById(childId);
-        if (!existing) throw new BadRequestError('Child not found');
+        if (!existing) throw new NotFoundError('Child not found');
         if (existing.parentId !== parentId) {
-            throw new BadRequestError('Child does not belong to the parent');
+            throw new ForbiddenError('Not allowed');
         }
 
         const body = req.body as ChildSchema['ChildUpdate'];

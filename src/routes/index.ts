@@ -7,6 +7,7 @@ import activityRouter from './activity.routes.js';
 import routineRouter from './routine.routes.js';
 import parentRouter from './parent.routes.js';
 import accRouter from './acc.routes.js';
+import aiRouter from './ai.routes.js';
 
 const router = express.Router();
 
@@ -18,4 +19,5 @@ router.use('/posts', communityPostsRouter);
 router.use('/activity', activityRouter);
 router.use('/routine', routineRouter);
 router.use('/acc', accRouter);
+router.use('/ai', aiRouter);
 export default router;

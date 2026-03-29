@@ -49,6 +49,7 @@ model Child {
   autismBehaviourForms AutismBehaviourForm[]
   routines             ChildRoutine[]
   routineCheckIns      RoutineCheckIn[]
+  aacUsageLogs         AACUsageLog[]
   parent               Parent                  @relation(fields: [parentId], references: [id], onDelete: Cascade)
 
   @@index([parentId])
@@ -302,9 +303,24 @@ model AACSymbol {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
+  usageLogs  AACUsageLog[]
+
   @@index([categoryId])
   @@map("aac_symbols")
+}
 
+model AACUsageLog {
+  id       Int      @id @default(autoincrement())
+  childId  Int      @map("child_id")
+  symbolId Int      @map("symbol_id")
+  usedAt   DateTime @default(now()) @map("used_at")
+
+  child    Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  symbol   AACSymbol @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+
+  @@index([childId, usedAt])
+  @@index([symbolId])
+  @@map("aac_usage_logs")
 }
 
 

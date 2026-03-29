@@ -20,3 +20,5 @@ export const jwtSecret = requiredEnv('JWT_SECRET');
 export const refreshSecret = requiredEnv('REFRESH_SECRET');
 export const refreshTokenTtlMs = 7 * 24 * 60 * 60 * 1000; // 7 days
 export const MAX_RESPONSE = 2;
+export const openaiApiKey = process.env.OPENAI_API_KEY ?? null;
+export const openaiModelName = process.env.OPENAI_MODEL_NAME ?? 'gpt-4o-mini';
